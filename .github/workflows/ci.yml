@@ -33,6 +33,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+
   build:
     name: Build
     needs: lint-and-test

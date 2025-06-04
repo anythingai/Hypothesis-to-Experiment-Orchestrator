@@ -1,5 +1,7 @@
 # HEO 2.0 — Hypothesis-to-Experiment Orchestrator
 
+![CI](https://github.com/bio-xyz/hypothesis-to-experiment-orchestrator/actions/workflows/ci.yml/badge.svg)
+
 Automate AI-driven scientific research workflows with an ElizaOS plugin that handles:
 
 - Hypothesis generation (Google Gemini + OxiGraph RAG)
@@ -91,44 +93,7 @@ src/
 ```bash
 pnpm run lint    # ESLint
 pnpm test        # Jest tests
+pnpm run test:cov # Jest coverage report
+pnpm run test:e2e # Playwright end-to-end tests
 pnpm build       # Next.js production build
 ```
-
----
-
-## End-to-End Integration Test
-
-To verify the complete HEO workflow (Hypothesis → Protocol Execution → Proof Generation & Anchoring → IPFS Storage), run the following:
-
-1. Install development dependencies for TS-node ESM:
-
-```bash
-npm install --save-dev ts-node @types/node @types/dotenv
-```
-
-2. Ensure you have valid services running (or testnet endpoints configured) for:
-   - OriginTrail DKG (OT_NODE_HOSTNAME, OT_NODE_PORT, BLOCKCHAIN_ID, PUBLIC_KEY, PRIVATE_KEY)
-   - Strateos/ECL (`ECL_API_URL`, `ECL_API_KEY`)
-   - Solana RPC (`SOLANA_RPC_URL`, `SOLANA_KEYPAIR_PATH`)
-   - IPFS (local or Pinata via `IPFS_ENDPOINT`, `PINATA_JWT` or API key/secret)
-
-3. Run the integration script:
-
-```bash
-npm run testFlow
-```
-
-This script will produce console logs for each step. You should see:
-
-- Generated hypothesis text
-- Cloud-lab run ID and status
-- zkSNARK proof IPFS CID and Solana transaction signature
-- Metadata CID for the combined JSON-LD on IPFS
-
-If any step fails, verify your `.env` settings and that the respective service endpoints are accessible.
-
----
-
-## License
-
-This project is licensed under MIT. Please see [LICENSE](LICENSE) for details.

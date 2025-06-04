@@ -1,6 +1,5 @@
 import { z } from "zod";
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
 import { hypothesisService, type HypothesisGenerationInput } from '@/services/hypothesisService';
 import type { ElizaOSContext } from '@/elizaos/types';
 
@@ -26,7 +25,10 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const parse = generateSchema.safeParse(body);
   if (!parse.success) {
-    return NextResponse.json({ success: false, errors: parse.error.errors }, { status: 400 });
+    return new Response(JSON.stringify({ success: false, errors: parse.error.errors }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
   const input = parse.data as HypothesisGenerationInput;
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
@@ -45,8 +47,14 @@ export async function POST(request: NextRequest) {
         processing_time_ms: duration
       }
     }));
-    return NextResponse.json({ success: true, data: uiHyps });
+    return new Response(JSON.stringify({ success: true, data: uiHyps }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return new Response(JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 } 

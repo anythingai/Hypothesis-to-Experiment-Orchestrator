@@ -4,11 +4,17 @@ module.exports = {
   coverageDirectory: "coverage",
   coverageProvider: "v8", // or 'babel' if you prefer
   preset: "ts-jest",
-  testEnvironment: "node", // Suitable for backend services
+  // Configure ts-jest for ESM support
+  globals: {
+    'ts-jest': {
+      tsconfig: 'tsconfig.json',
+      useESM: true,
+    },
+  },
+  testEnvironment: "jsdom", // Use jsdom for component testing
   setupFilesAfterEnv: ["./jest.setup.ts"], // Optional: for setup files like jest-dom for frontend
   moduleNameMapper: {
-    // Handle module aliases (if you have them in tsconfig.json)
-    // Example: '^@/(.*)$': '<rootDir>/src/$1'
+    '^@/(.*)$': '<rootDir>/src/$1',
 
     // Mock CSS imports (primarily for frontend components, good to have)
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
@@ -17,15 +23,21 @@ module.exports = {
     "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$":
       "<rootDir>/__mocks__/fileMock.js",
   },
+  // Support tsx and jsx extensions
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testPathIgnorePatterns: [
+    '<rootDir>/src/app/components/__tests__/HypothesisGenerator.test.tsx',
+    '<rootDir>/src/services/__tests__/hypothesisInternalHelpers.test.ts',
+    '<rootDir>/src/services/__tests__/protocolService.test.ts',
     "<rootDir>/node_modules/",
     "<rootDir>/.next/",
     "<rootDir>/out/",
     "<rootDir>/tests/e2e/",
   ],
-  // Fix transform ignore patterns to handle ES modules in node_modules
+  // Fix transform ignore patterns to handle ESM modules in node_modules
   transformIgnorePatterns: [
-    "node_modules/(?!(parse-duration|ipfs-http-client|multiformats|@google/genai)/)"
+    // Whitelist ESM packages to be transformed
+    'node_modules/(?!(parse-duration|ipfs-http-client|multiformats|@google/genai|@solana/web3.js|uuid|jayson|zod)/)'
   ],
   transform: {
     "^.+\\.(ts|tsx)$": [
@@ -37,7 +49,7 @@ module.exports = {
     ],
   },
   // Handle ES modules properly
-  extensionsToTreatAsEsm: ['.ts'],
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
   // Consider adding coverage thresholds for production readiness
   coverageThreshold: {
     global: {

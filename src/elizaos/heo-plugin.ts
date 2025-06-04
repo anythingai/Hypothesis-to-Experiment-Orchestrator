@@ -132,7 +132,7 @@ export const heoPlugin: Plugin = {
     ]),
     // Adapt solanaService methods
     ...adaptService('solanaService', solanaService, [
-      { methodName: 'anchorExperimentProof', serviceType: 'ANCHOR_EXPERIMENT_PROOF', description: 'Anchors experiment proof on Solana.' },
+      { methodName: 'anchorProof', serviceType: 'ANCHOR_EXPERIMENT_PROOF', description: 'Anchors experiment proof on Solana.' },
     ]),
   ],
   dkgEndpoints: { 

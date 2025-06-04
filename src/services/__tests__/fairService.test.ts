@@ -1,3 +1,11 @@
+jest.mock('ipfs-http-client', () => ({
+  create: () => ({
+    version: () => Promise.resolve({ version: 'test' }),
+    add: jest.fn().mockResolvedValue({ cid: { toString: () => 'testcid' }, size: 0 }),
+    cat: async function* () { yield Buffer.from(''); }
+  })
+}));
+
 import { fairService, type FairPackageInput } from '../fairService';
 
 describe('FairService', () => {

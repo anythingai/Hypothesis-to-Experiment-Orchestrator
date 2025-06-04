@@ -1,5 +1,4 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { validationService, type ExperimentResultInput } from "../../../services/validationService";
 
@@ -51,10 +50,10 @@ export async function POST(request: NextRequest) {
     const requestBody = await request.json();
     const result = validationSchema.safeParse(requestBody);
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: "Invalid request", details: result.error.errors },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Invalid request", details: result.error.errors }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
     const input = result.data as ExperimentResultInput;
     const context = { config: { ...process.env }, logger: console };
@@ -62,16 +61,22 @@ export async function POST(request: NextRequest) {
       input,
       context
     );
-    return NextResponse.json({ success: true, data: status });
+    return new Response(JSON.stringify({ success: true, data: status }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
 
 // Optional GET for status
 export function GET() {
-  return NextResponse.json({ message: "HEO Validation Endpoint. Use POST to validate experiment results." });
+  return new Response(JSON.stringify({ message: "HEO Validation Endpoint. Use POST to validate experiment results." }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
 } 

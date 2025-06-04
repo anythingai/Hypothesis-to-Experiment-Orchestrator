@@ -3,6 +3,8 @@ import SystemStatus from './components/SystemStatus';
 import HypothesisGenerator from './components/HypothesisGenerator';
 import KnowledgeGraphExplorer from './components/KnowledgeGraphExplorer';
 import ProtocolValidator from './components/ProtocolValidator';
+import ProtocolRunner from './components/ProtocolRunner';
+import pkg from '../../package.json';
 
 export const metadata: Metadata = {
   title: 'HEO Plugin - Bio x AI Hackathon 2025',
@@ -40,7 +42,7 @@ export default function HomePage() {
                 ✅ Plugin Ready
               </span>
               <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                v0.1.0
+                {`v${pkg.version}`}
               </span>
             </div>
           </div>
@@ -169,6 +171,9 @@ export default function HomePage() {
             
             {/* Knowledge Graph Explorer */}
             <KnowledgeGraphExplorer />
+            
+            {/* Protocol Runner */}
+            <ProtocolRunner />
             
             {/* Protocol Validator */}
             <ProtocolValidator />

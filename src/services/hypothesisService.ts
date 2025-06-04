@@ -460,6 +460,7 @@ export const internalHelpers = {
     if (contextEmbeddings.length === 0 && contextQueryForOxigraph) {
       effectiveLogger.info('scoreNovelty: No context embeddings from OxiGraph – falling back to embedding raw query.');
       contextEmbeddings = await internalHelpers.callGeminiEmbeddingService({
+        apiKey,
         texts: [contextQueryForOxigraph],
         modelName: embeddingModelName,
         taskType: "RETRIEVAL_QUERY",
