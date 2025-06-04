@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: heo-plugin
+  labels:
+    app: heo-plugin
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: heo-plugin
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: heo-plugin
+    spec:
+      containers:
+      - name: heo-plugin
+        image: ${DOCKER_REGISTRY}/heo-plugin:${VERSION}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: heo-secrets
+              key: gemini-api-key
+        - name: GEMINI_MODEL_NAME
+          value: "gemini-2.0-pro"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: heo-secrets
+              key: jwt-secret
+        - name: ORIGINTRAIL_DKG_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: heo-config
+              key: dkg-endpoint
+        - name: ORIGINTRAIL_DKG_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: heo-secrets
+              key: dkg-api-key
+        - name: ORIGINTRAIL_DKG_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: heo-secrets
+              key: dkg-api-secret
+        - name: SOLANA_RPC_URL
+          valueFrom:
+            configMapKeyRef:
+              name: heo-config
+              key: solana-rpc-url
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: heo-secrets
+              key: database-url
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: registry-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: heo-plugin-service
+spec:
+  selector:
+    app: heo-plugin
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: heo-plugin-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  tls:
+  - hosts:
+    - heo.example.com
+    secretName: heo-tls
+  rules:
+  - host: heo.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: heo-plugin-service
+            port:
+              number: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: heo-config
+data:
+  dkg-endpoint: "https://dkg.origintrail.network"
+  solana-rpc-url: "https://api.mainnet-beta.solana.com"
+  ipfs-gateway-url: "https://ipfs.io/ipfs/" 
