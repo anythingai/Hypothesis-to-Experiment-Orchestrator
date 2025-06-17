@@ -1,6 +1,4 @@
-# HEO 2.0 — Hypothesis-to-Experiment Orchestrator
-
-![CI](https://github.com/bio-xyz/hypothesis-to-experiment-orchestrator/actions/workflows/ci.yml/badge.svg)
+# HEO — Hypothesis-to-Experiment Orchestrator
 
 Automate AI-driven scientific research workflows with an ElizaOS plugin that handles:
 
