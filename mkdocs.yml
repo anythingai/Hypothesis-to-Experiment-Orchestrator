@@ -1,0 +1,111 @@
+site_name: HEO - Scientific CI/CD Platform
+site_description: GitLab CI/CD automation for scientific research workflows
+site_author: HEO Team
+site_url: https://your-username.gitlab.io/heo-ai-in-action
+
+repo_name: heo-ai-in-action
+repo_url: https://github.com/YOUR_USERNAME/heo-ai-in-action
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - footnotes
+  - md_in_html
+  - attr_list
+  - def_list
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - minify:
+      minify_html: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: getting-started/quick-start.md
+    - Installation: getting-started/installation.md
+    - Configuration: getting-started/configuration.md
+  - GitLab CI/CD:
+    - Overview: gitlab/overview.md
+    - Templates: gitlab/templates.md
+    - Setup Guide: gitlab/setup.md
+    - Best Practices: gitlab/best-practices.md
+  - API Reference:
+    - Overview: api/overview.md
+    - Hypothesis Generation: api/hypothesis.md
+    - Protocol Validation: api/validation.md
+    - Lab Automation: api/lab.md
+    - Results Publishing: api/publishing.md
+  - Architecture:
+    - System Design: architecture/system-design.md
+    - Components: architecture/components.md
+    - Data Flow: architecture/data-flow.md
+    - Security: architecture/security.md
+  - Examples:
+    - PCR Protocol: examples/pcr.md
+    - CRISPR Experiments: examples/crispr.md
+    - ELISA Assays: examples/elisa.md
+  - FAQ: faq.md
+  - Contributing: contributing.md
+  - Support: support.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/YOUR_USERNAME/heo-ai-in-action
+    - icon: fontawesome/brands/gitlab
+      link: https://gitlab.com/YOUR_USERNAME/heo-ai-in-action
+  version:
+    provider: mike
+    default: latest
+
+copyright: Copyright &copy; 2025 HEO Team - AI in Action Hackathon 2025 

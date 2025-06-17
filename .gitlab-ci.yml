@@ -1,0 +1,312 @@
+# HEO GitLab CI/CD Template
+# Copy this to your lab's repo to enable automated hypothesis-to-experiment workflows
+
+stages:
+  - validate
+  - hypothesis
+  - experiment
+  - proof
+  - publish
+
+variables:
+  HEO_API_BASE: "https://heo.anything.ai/api"
+  NODE_VERSION: "18"
+
+# Validate protocol before running
+validate_protocol:
+  stage: validate
+  image: node:$NODE_VERSION
+  script:
+    - npm install -g @heo/cli || echo "Installing HEO CLI..."
+    - heo validate-protocol --file protocol.json
+  only:
+    - merge_requests
+    - main
+
+# Generate hypothesis using AI
+generate_hypothesis:
+  stage: hypothesis
+  image: node:$NODE_VERSION
+  script:
+    - |
+      curl -X POST "$HEO_API_BASE/heo/generate" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $HEO_API_TOKEN" \
+        -d "{\"query\": \"$RESEARCH_QUERY\"}" \
+        -o hypothesis_results.json
+    - cat hypothesis_results.json
+  artifacts:
+    paths:
+      - hypothesis_results.json
+    expire_in: 1 hour
+  only:
+    - main
+
+# Execute lab protocol
+run_experiment:
+  stage: experiment
+  image: node:$NODE_VERSION
+  needs: ["generate_hypothesis"]
+  script:
+    - |
+      HYPOTHESIS_ID=$(jq -r '.data[0].id' hypothesis_results.json)
+      curl -X POST "$HEO_API_BASE/lab/run" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $HEO_API_TOKEN" \
+        -d "{\"hypothesis_id\": \"$HYPOTHESIS_ID\", \"protocol\": $(cat protocol.json)}" \
+        -o experiment_results.json
+    - cat experiment_results.json
+  artifacts:
+    paths:
+      - experiment_results.json
+    expire_in: 24 hours
+  only:
+    - main
+
+# Generate zkSNARK proof
+generate_proof:
+  stage: proof
+  image: node:$NODE_VERSION
+  needs: ["run_experiment"]
+  script:
+    - |
+      RUN_ID=$(jq -r '.run_id' experiment_results.json)
+      curl -X POST "$HEO_API_BASE/validation" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $HEO_API_TOKEN" \
+        -d "{\"protocol_instance_id\": \"$RUN_ID\", \"raw_data\": $(jq '.raw_data' experiment_results.json)}" \
+        -o proof_results.json
+    - cat proof_results.json
+  artifacts:
+    paths:
+      - proof_results.json
+    expire_in: 7 days
+  only:
+    - main
+
+# Publish to IPFS and DKG
+publish_results:
+  stage: publish
+  image: node:$NODE_VERSION
+  needs: ["generate_proof"]
+  script:
+    - |
+      curl -X POST "$HEO_API_BASE/publish/fair" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $HEO_API_TOKEN" \
+        -d "{\"experiment_data\": $(cat experiment_results.json), \"proof_data\": $(cat proof_results.json)}" \
+        -o published_results.json
+    - echo "Published to IPFS and DKG:"
+    - cat published_results.json
+  artifacts:
+    paths:
+      - published_results.json
+    expire_in: 30 days
+  only:
+    - main
+
+# Generate experiment report
+generate_report:
+  stage: publish
+  image: node:$NODE_VERSION
+  needs: ["publish_results"]
+  script:
+    - |
+      echo "# HEO Experiment Report" > EXPERIMENT_REPORT.md
+      echo "Generated: $(date)" >> EXPERIMENT_REPORT.md
+      echo "" >> EXPERIMENT_REPORT.md
+      echo "## Hypothesis" >> EXPERIMENT_REPORT.md
+      jq -r '.data[0].text' hypothesis_results.json >> EXPERIMENT_REPORT.md
+      echo "" >> EXPERIMENT_REPORT.md
+      echo "## Results" >> EXPERIMENT_REPORT.md
+      echo "- IPFS CID: $(jq -r '.ipfs_cid' published_results.json)" >> EXPERIMENT_REPORT.md
+      echo "- Solana TX: $(jq -r '.solana_tx' published_results.json)" >> EXPERIMENT_REPORT.md
+      echo "- DKG UAL: $(jq -r '.dkg_ual' published_results.json)" >> EXPERIMENT_REPORT.md
+  artifacts:
+    paths:
+      - EXPERIMENT_REPORT.md
+  only:
+    - main
+
+# GitLab CI/CD Pipeline for HEO Documentation
+# Deploys MkDocs documentation to GitLab Pages
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PYTHON_VERSION: "3.11"
+
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+# Build documentation with MkDocs
+build_docs:
+  stage: build
+  image: python:${PYTHON_VERSION}
+  before_script:
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install --upgrade pip
+    - pip install mkdocs-material
+    - pip install mkdocs-git-revision-date-localized-plugin
+    - pip install mkdocs-minify-plugin
+  script:
+    - source venv/bin/activate
+    - mkdocs build --strict
+  artifacts:
+    paths:
+      - site/
+    expire_in: 1 hour
+  only:
+    - main
+    - merge_requests
+
+# Test documentation links and structure
+test_docs:
+  stage: test
+  image: python:${PYTHON_VERSION}
+  dependencies:
+    - build_docs
+  before_script:
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install --upgrade pip
+    - pip install mkdocs-material
+    - pip install linkchecker
+  script:
+    - source venv/bin/activate
+    # Test MkDocs configuration
+    - mkdocs build --strict
+    # Test for broken internal links (skip external for CI speed)
+    - linkchecker --check-extern --ignore-url="^https?://" site/
+  only:
+    - main
+    - merge_requests
+
+# Deploy to GitLab Pages
+pages:
+  stage: deploy
+  image: python:${PYTHON_VERSION}
+  dependencies:
+    - build_docs
+  script:
+    - mkdir public
+    - cp -r site/* public/
+    # Add custom domain configuration if needed
+    - echo "docs.heo-ai.com" > public/CNAME
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  only:
+    - main
+
+# Build and test on feature branches
+build_preview:
+  stage: build
+  image: python:${PYTHON_VERSION}
+  before_script:
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install --upgrade pip
+    - pip install mkdocs-material
+    - pip install mkdocs-git-revision-date-localized-plugin
+    - pip install mkdocs-minify-plugin
+  script:
+    - source venv/bin/activate
+    - mkdocs build --strict
+    - echo "Documentation preview built successfully"
+    - echo "Site size:" $(du -sh site/)
+    - echo "Pages generated:" $(find site/ -name "*.html" | wc -l)
+  artifacts:
+    paths:
+      - site/
+    expire_in: 1 day
+    reports:
+      junit: site/test-results.xml
+  except:
+    - main
+
+# Security scan for documentation
+security_scan:
+  stage: test
+  image: python:${PYTHON_VERSION}
+  before_script:
+    - pip install safety bandit
+  script:
+    - safety check --json || true
+    - bandit -r . -f json -o bandit-report.json || true
+  artifacts:
+    reports:
+      security: bandit-report.json
+    expire_in: 1 week
+  allow_failure: true
+  only:
+    - main
+    - merge_requests
+
+# Performance test for documentation site
+performance_test:
+  stage: test
+  image: node:18
+  dependencies:
+    - build_docs
+  before_script:
+    - npm install -g lighthouse
+    - apt-get update && apt-get install -y chromium
+  script:
+    - cd site
+    - python -m http.server 8000 &
+    - sleep 5
+    - lighthouse http://localhost:8000 --output=json --output-path=lighthouse-report.json --chrome-flags="--headless --no-sandbox"
+    - cat lighthouse-report.json | jq '.categories.performance.score * 100'
+  artifacts:
+    reports:
+      performance: site/lighthouse-report.json
+    expire_in: 1 week
+  allow_failure: true
+  only:
+    - main
+
+# Notify on deployment
+notify_deployment:
+  stage: deploy
+  image: alpine:latest
+  dependencies:
+    - pages
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      if [ "$CI_COMMIT_REF_NAME" = "main" ]; then
+        echo "📚 HEO Documentation deployed successfully!"
+        echo "🔗 URL: https://$CI_PROJECT_NAMESPACE.gitlab.io/$CI_PROJECT_NAME"
+        echo "📊 Build info:"
+        echo "  - Commit: $CI_COMMIT_SHORT_SHA"
+        echo "  - Pipeline: $CI_PIPELINE_ID"
+        echo "  - Duration: $CI_JOB_STARTED_AT to $(date)"
+        # Optional: Send notification to Slack/Discord/Teams
+        # curl -X POST -H 'Content-type: application/json' \
+        #   --data '{"text":"📚 HEO Documentation updated: https://'$CI_PROJECT_NAMESPACE'.gitlab.io/'$CI_PROJECT_NAME'"}' \
+        #   $SLACK_WEBHOOK_URL
+      fi
+  only:
+    - main
+  when: on_success
+
+# Cleanup old artifacts
+cleanup:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - echo "Cleaning up old documentation artifacts..."
+    - echo "This job runs to clean up resources"
+  when: manual
+  only:
+    - main 

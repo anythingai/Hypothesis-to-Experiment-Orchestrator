@@ -1,0 +1,239 @@
+{
+  "name": "Basic PCR Amplification Protocol",
+  "description": "Standard PCR protocol for amplifying DNA sequences up to 3kb",
+  "version": "1.0.0",
+  "type": "pcr",
+  "duration_estimate": "3 hours",
+  "cost_estimate": "$25",
+  "safety_requirements": {
+    "bsl_level": 1,
+    "safety_cabinet": false,
+    "ppe_required": true,
+    "ppe_items": ["gloves", "safety_glasses", "lab_coat"],
+    "chemical_hazards": ["ethidium_bromide", "formamide"],
+    "notes": "Handle DNA stains with care"
+  },
+  "equipment_required": [
+    {
+      "name": "PCR Thermocycler",
+      "model": "Bio-Rad T100",
+      "calibration_required": true
+    },
+    {
+      "name": "Micropipettes",
+      "volumes": ["10-100μL", "100-1000μL"],
+      "calibration_required": true
+    },
+    {
+      "name": "Vortex Mixer",
+      "required": true
+    },
+    {
+      "name": "Centrifuge",
+      "max_speed": "13000 rpm",
+      "required": true
+    }
+  ],
+  "reagents": [
+    {
+      "name": "Forward Primer",
+      "concentration": "10μM",
+      "volume_per_reaction": "1μL",
+      "supplier": "IDT",
+      "storage": "-20°C"
+    },
+    {
+      "name": "Reverse Primer", 
+      "concentration": "10μM",
+      "volume_per_reaction": "1μL",
+      "supplier": "IDT",
+      "storage": "-20°C"
+    },
+    {
+      "name": "Template DNA",
+      "concentration": "10ng/μL",
+      "volume_per_reaction": "1μL",
+      "storage": "-20°C"
+    },
+    {
+      "name": "PCR Master Mix",
+      "volume_per_reaction": "25μL",
+      "supplier": "NEB",
+      "product_code": "M0541",
+      "storage": "-20°C"
+    },
+    {
+      "name": "Nuclease-free Water",
+      "volume_per_reaction": "22μL",
+      "storage": "room_temperature"
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_1",
+      "name": "Prepare PCR Master Mix",
+      "description": "Combine PCR reagents in sterile microcentrifuge tube",
+      "duration": "10 minutes",
+      "temperature": "4°C",
+      "instructions": [
+        "Thaw all reagents on ice",
+        "Vortex and briefly spin down all reagents",
+        "In sterile 1.5mL tube, add reagents in order listed",
+        "Mix gently by pipetting, avoid creating bubbles",
+        "Keep on ice until ready to use"
+      ],
+      "reagent_volumes": {
+        "PCR Master Mix": "25μL",
+        "Forward Primer": "1μL", 
+        "Reverse Primer": "1μL",
+        "Template DNA": "1μL",
+        "Nuclease-free Water": "22μL"
+      },
+      "quality_checks": [
+        "Verify no visible bubbles in reaction mix",
+        "Confirm total volume is 50μL per reaction"
+      ]
+    },
+    {
+      "id": "step_2", 
+      "name": "Load PCR Reactions",
+      "description": "Transfer reaction mix to PCR tubes/plates",
+      "duration": "5 minutes",
+      "temperature": "4°C",
+      "instructions": [
+        "Use sterile PCR tubes or 96-well PCR plate",
+        "Dispense 50μL per reaction well",
+        "Include positive and negative controls",
+        "Seal tubes/plates securely"
+      ],
+      "quality_checks": [
+        "Verify all wells contain 50μL",
+        "Confirm no cross-contamination between wells",
+        "Check seal integrity"
+      ]
+    },
+    {
+      "id": "step_3",
+      "name": "PCR Thermocycling",
+      "description": "Run PCR amplification program",
+      "duration": "2.5 hours",
+      "instructions": [
+        "Load samples into pre-heated thermocycler",
+        "Start PCR program immediately",
+        "Ensure lid is heated to 105°C"
+      ],
+      "thermocycler_program": {
+        "initial_denaturation": {
+          "temperature": "95°C",
+          "duration": "3 minutes"
+        },
+        "cycles": 35,
+        "cycle_steps": [
+          {
+            "name": "denaturation",
+            "temperature": "95°C", 
+            "duration": "30 seconds"
+          },
+          {
+            "name": "annealing",
+            "temperature": "58°C",
+            "duration": "30 seconds"
+          },
+          {
+            "name": "extension",
+            "temperature": "72°C",
+            "duration": "1 minute"
+          }
+        ],
+        "final_extension": {
+          "temperature": "72°C",
+          "duration": "5 minutes"
+        },
+        "hold": {
+          "temperature": "4°C",
+          "duration": "indefinite"
+        }
+      },
+      "quality_checks": [
+        "Verify thermocycler reached target temperatures",
+        "Confirm all cycles completed successfully"
+      ]
+    },
+    {
+      "id": "step_4",
+      "name": "Analyze Results",
+      "description": "Check PCR products by gel electrophoresis",
+      "duration": "45 minutes",
+      "temperature": "room_temperature",
+      "instructions": [
+        "Prepare 1% agarose gel with DNA stain",
+        "Load 5μL PCR product + loading dye",
+        "Include DNA ladder for size reference",
+        "Run at 120V for 30 minutes",
+        "Image gel under UV/blue light"
+      ],
+      "expected_results": {
+        "product_size": "~1.2kb",
+        "positive_control": "single_bright_band",
+        "negative_control": "no_bands",
+        "success_criteria": "Specific band present, no primer dimers"
+      }
+    }
+  ],
+  "data_collection": {
+    "required_measurements": [
+      "gel_image",
+      "thermocycler_log",
+      "reaction_volumes",
+      "reagent_lot_numbers"
+    ],
+    "file_formats": ["TIFF", "JSON", "CSV"],
+    "metadata_required": [
+      "operator_name",
+      "date_time",
+      "equipment_serial_numbers",
+      "environmental_conditions"
+    ]
+  },
+  "success_criteria": {
+    "primary": "Single band at expected size (~1.2kb)",
+    "secondary": "No primer dimers (<100bp)",
+    "controls": "Positive control amplifies, negative control clean"
+  },
+  "troubleshooting": {
+    "no_bands": [
+      "Check primer design and concentrations",
+      "Verify template DNA quality and quantity",
+      "Confirm thermocycler temperatures",
+      "Check reagent expiration dates"
+    ],
+    "multiple_bands": [
+      "Increase annealing temperature",
+      "Reduce primer concentrations",
+      "Optimize primer design",
+      "Check for template contamination"
+    ],
+    "primer_dimers": [
+      "Increase annealing temperature",
+      "Reduce primer concentrations",
+      "Check primer design for self-complementarity"
+    ]
+  },
+  "validation": {
+    "reproducibility_requirements": {
+      "minimum_replicates": 3,
+      "success_rate_threshold": "80%",
+      "cv_threshold": "15%"
+    },
+    "controls_required": {
+      "positive_control": "Known template DNA",
+      "negative_control": "No template DNA",
+      "blank_control": "No DNA, no primers"
+    }
+  },
+  "compliance": {
+    "standards": ["ISO 15189", "CAP"],
+    "regulatory": ["FDA 21 CFR Part 820"],
+    "documentation": "Complete chain of custody required"
+  }
+} 
