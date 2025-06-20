@@ -1,22 +1,19 @@
-/** @type {import('eslint').Linter.Config} */
-const config = {
-  extends: ['next/core-web-vitals'],
-  rules: {
-    'no-unused-vars': 'warn',
-    'no-console': 'off',
-  },
-  ignorePatterns: [
-    'node_modules/**',
-    '.next/**',
-    'dist/**',
-    'dist-scripts/**',
-    'circuits/**',
-    'ipfs-data/**',
-    'oxigraph/**',
-    'target/**',
-    'playwright-report/**',
-    'test-results/**',
-  ],
-};
+const { FlatCompat } = require('@eslint/eslintrc');
+const path = require('path');
 
-module.exports = config;
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
+module.exports = [
+  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/consistent-type-imports': 'warn',
+      '@typescript-eslint/no-require-imports': 'off',
+      'no-undef': 'off'
+    }
+  }
+];

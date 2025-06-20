@@ -7,9 +7,10 @@ import { protocolService } from "../../../../../services/protocolService";
  */
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
   const context = { config: { ...process.env }, logger: console };
   const template = protocolService.getTemplateDetails(id, context);
   if (!template) {

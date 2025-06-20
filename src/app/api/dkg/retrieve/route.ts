@@ -12,9 +12,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Missing ual in request body' }, { status: 400 });
   }
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
-  dkgService.initialize(context);
+  // dkgService is now a mock service, no initialization needed
   try {
-    const data = await dkgService.getAsset(ual, contentType ?? 'all');
+          const data = await dkgService.retrieve(ual);
     return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json(

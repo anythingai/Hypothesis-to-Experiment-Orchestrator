@@ -105,11 +105,7 @@ const validateExperimentResults = async (
     validationStatus.timestamp = new Date().toISOString();
     
     // Use the solanaService to anchor the proof on-chain
-    const solanaTxId = await solanaService.anchorProof(
-    protocol_instance_id,
-      proofResult.proof,
-      ipfsCid
-    );
+    const solanaTxId = await solanaService.anchorProof(ipfsCid);
     
     // Update final status
     validationStatus.status = "validated_on_chain";

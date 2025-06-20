@@ -12,9 +12,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Missing content in request body' }, { status: 400 });
   }
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
-  dkgService.initialize(context);
+  // dkgService is now a mock service, no initialization needed
   try {
-    const data = await dkgService.createAsset(content, options ?? { epochsNum: 1 });
+    const data = await dkgService.publish(content);
     return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json(

@@ -1,6 +1,7 @@
-// import { logger } from '../utils/logger'; // Logger will be passed via context
-import type { ElizaOSContext } from '../elizaos/types.ts'; // Import ElizaOSContext
-import { ApplicationError, ErrorCode } from '../utils/errorHandling.ts';
+import { logger } from '../utils/logger';
+import fs from 'fs';
+import type { ElizaOSContext } from '../elizaos/types'; // Import ElizaOSContext
+import { ApplicationError, ErrorCode } from '../utils/errorHandling';
 
 const DEFAULT_OXIGRAPH_ENDPOINT_URL = 'http://localhost:7878';
 const OXIGRAPH_ENDPOINT_CONFIG_KEY = 'OXIGRAPH_ENDPOINT_URL';

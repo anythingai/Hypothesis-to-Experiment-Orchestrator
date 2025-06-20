@@ -4,9 +4,10 @@ import { labAutomationService } from "@/services/labAutomationService";
 
 export const runtime = "nodejs";
 
-export async function GET(request: NextRequest, { params }: { params: { runId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ runId: string }> }) {
   try {
-    const { runId } = params;
+    const resolvedParams = await params;
+  const { runId } = resolvedParams;
     const status = await labAutomationService.pollRunStatus(runId);
     return NextResponse.json({ success: true, status });
   } catch (error) {

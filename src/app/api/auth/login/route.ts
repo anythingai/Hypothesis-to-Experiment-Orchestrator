@@ -29,9 +29,6 @@ const loginSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters")
 });
 
-// Define the request body type based on the schema
-type _LoginRequest = z.infer<typeof loginSchema>;
-
 export async function POST(request: NextRequest) {
   try {
     // Parse and validate request body

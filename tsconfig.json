@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
-    "allowImportingTsExtensions": true,
-    "target": "esnext",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es6"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -20,18 +22,23 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
-    "types": ["node", "jest"]
+    "target": "ES2017"
   },
   "include": [
     "next-env.d.ts",
-    "src/types/**/*.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "eslint.config.js"
+    ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules",
+    "scripts/**/*",
+    "src/app/api/dkg/**/*"
+  ]
 }

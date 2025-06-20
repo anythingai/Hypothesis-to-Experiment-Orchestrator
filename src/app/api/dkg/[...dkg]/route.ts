@@ -1,120 +1,89 @@
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { dkgService } from '@/services/dkgService';
 
-export async function GET(request: Request, { params }: { params: { dkg: string[] } }) {
-  // Initialize DKG client per-request using environment variables
-  const context = { config: process.env as Record<string, string>, logger: console };
-  dkgService.initialize(context);
-  const [action, subaction, ...rest] = params.dkg || [];
+// Simplified DKG API route for hackathon demo
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ dkg: string[] }> }
+) {
   try {
-    switch (action) {
-      case 'node-info': {
-        const info = await dkgService.nodeInfo();
-        return new Response(JSON.stringify({ ok: true, data: info }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      case 'asset':
-        if (subaction === 'get' && rest.length === 1) {
-          const ual = rest[0];
-          const url = new URL(request.url);
-          const contentType = (url.searchParams.get('contentType') as 'all' | 'public' | 'private') || 'all';
-          const asset = await dkgService.getAsset(ual, contentType);
-          return new Response(JSON.stringify({ ok: true, data: asset }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          });
+    const params = await context.params;
+    const operation = params.dkg[0] || 'health';
+    const { searchParams } = new URL(request.url);
+
+    console.log('DKG GET request:', { operation, params: params.dkg });
+
+    switch (operation) {
+      case 'health':
+        const health = await dkgService.healthCheck();
+        return NextResponse.json({ success: true, data: health });
+
+      case 'retrieve':
+        const ual = searchParams.get('ual');
+        if (!ual) {
+          return NextResponse.json(
+            { success: false, error: 'UAL parameter required' },
+            { status: 400 }
+          );
         }
-        break;
-      case 'allowance': {
-        const allowance = await dkgService.getCurrentAllowance();
-        return new Response(JSON.stringify({ ok: true, data: allowance }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
+        const data = await dkgService.retrieve(ual);
+        return NextResponse.json({ success: true, data });
+
       default:
-        return new Response(JSON.stringify({ ok: false, error: `Unsupported GET action: ${action}` }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return NextResponse.json(
+          { success: false, error: `Unknown operation: ${operation}` },
+          { status: 404 }
+        );
     }
-    return new Response(JSON.stringify({ ok: false, error: 'Invalid GET parameters' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (err) {
-    console.error(err);
-    return new Response(JSON.stringify({ ok: false, error: (err as Error).message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  } catch (error) {
+    console.error('DKG GET error:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(request: Request, { params }: { params: { dkg: string[] } }) {
-  // Initialize DKG client per-request using environment variables
-  const context = { config: process.env as Record<string, string>, logger: console };
-  dkgService.initialize(context);
-  const [action, subaction] = params.dkg || [];
-  const body = await request.json();
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ dkg: string[] }> }
+) {
   try {
-    switch (action) {
-      case 'query': {
-        const result = await dkgService.query(body.sparql);
-        return new Response(JSON.stringify({ ok: true, data: result }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
-      case 'asset':
-        if (subaction === 'create') {
-          const result = await dkgService.createAsset(body.content, body.options);
-          return new Response(JSON.stringify({ ok: true, data: result }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const params = await context.params;
+    const operation = params.dkg[0] || 'publish';
+    const body = await request.json();
+
+    console.log('DKG POST request:', { operation, body });
+
+    switch (operation) {
+      case 'publish':
+        if (!body.data) {
+          return NextResponse.json(
+            { success: false, error: 'Data field required for publishing' },
+            { status: 400 }
+          );
         }
-        break;
-      case 'bid-suggestion': {
-        const result = await dkgService.getBidSuggestion(body.content, body.options);
-        return new Response(JSON.stringify({ ok: true, data: result }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
-      case 'format-graph': {
-        const result = await dkgService.formatGraph(body.content);
-        return new Response(JSON.stringify({ ok: true, data: result }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
-      case 'triples-number': {
-        const result = await dkgService.getTriplesNumber(body.content);
-        return new Response(JSON.stringify({ ok: true, data: result }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
-      case 'chunks-number': {
-        const result = await dkgService.getChunksNumber(body.content);
-        return new Response(JSON.stringify({ ok: true, data: result }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
-      case 'allowance':
-        if (subaction === 'increase') {
-          const result = await dkgService.increaseAllowance(body.amount);
-          return new Response(JSON.stringify({ ok: true, data: result }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-        if (subaction === 'decrease') {
-          const result = await dkgService.decreaseAllowance(body.amount);
-          return new Response(JSON.stringify({ ok: true, data: result }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-        if (subaction === 'set') {
-          const result = await dkgService.setAllowance(body.amount);
-          return new Response(JSON.stringify({ ok: true, data: result }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
-        break;
+        const publishResult = await dkgService.publish(body.data);
+        return NextResponse.json({ success: true, data: publishResult });
+
       default:
-        return new Response(JSON.stringify({ ok: false, error: `Unsupported POST action: ${action}` }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return NextResponse.json(
+          { success: false, error: `Unknown POST operation: ${operation}` },
+          { status: 404 }
+        );
     }
-    return new Response(JSON.stringify({ ok: false, error: 'Invalid POST parameters' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (err) {
-    console.error(err);
-    return new Response(JSON.stringify({ ok: false, error: (err as Error).message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  } catch (error) {
+    console.error('DKG POST error:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      },
+      { status: 500 }
+    );
   }
 } 

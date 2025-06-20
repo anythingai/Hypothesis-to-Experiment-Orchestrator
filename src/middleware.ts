@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { authService } from './services/authService';
-import { browserLogger } from './utils/browserLogger';
+import { logger as browserLogger } from './utils/browserLogger';
 
 // Paths that should be protected
 const protectedPaths = [

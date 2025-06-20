@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
-import { browserLogger as logger } from "../utils/browserLogger";
+import { logger } from "../utils/browserLogger";
 
 // Interface for JWT payload
 interface JWTPayloadInput {

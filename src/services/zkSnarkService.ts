@@ -1,13 +1,21 @@
 // src/services/zkSnarkService.ts
-import { logger } from '../utils/logger.ts';
-import { ApplicationError, ErrorCode } from '../utils/errorHandling.ts';
-import { solanaService } from './solanaService.ts';
-import type { ProofData } from './solanaService.ts';
-import { ipfsService } from './ipfsService.ts';
+import type { ElizaOSContext } from '../elizaos/types';
+import { logger } from '../utils/logger';
+import { ApplicationError, ErrorCode } from '../utils/errorHandling';
+import { solanaService } from './solanaService';
+import { ipfsService } from './ipfsService';
 import * as snarkjs from 'snarkjs'; // Import snarkjs
 import * as fs from 'fs'; // Import fs for reading verification key
 import * as path from 'path';
-import type { ElizaOSContext } from '../elizaos/types.ts';
+
+// ProofData type defined inline
+interface ProofData {
+  pi_a: string[];
+  pi_b: string[][];
+  pi_c: string[];
+  protocol: string;
+  curve: string;
+}
 
 // Configuration constants
 const _IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -74,7 +82,7 @@ export interface ProofParameters {
  * Interface for zkSNARK proof result
  */
 export interface ProofResult {
-  proof: ProofData; // This should align with snarkjs proof structure if possible
+  proof: Groth16Proof; // Use snarkjs type directly
   publicInputs: unknown; // Public inputs used for verification
   ipfsCid: string; // Reference to stored data in IPFS
   timestamp: string;
@@ -238,7 +246,7 @@ class ZkSnarkService {
       logger.info('ZkSnarkService: snarkjs proof generation complete.');
       
       const proofResult: ProofResult = {
-        proof: proof as ProofData, 
+        proof: proof as Groth16Proof, 
         publicInputs: publicSignals, // For protocol_check.circom, publicSignals will be an empty array.
         ipfsCid,
         timestamp: new Date().toISOString(),
@@ -299,13 +307,7 @@ class ZkSnarkService {
     transactionId: string;
   }> {
     const proofResult = await this.generateProof(params);
-    const transactionId = await solanaService.anchorProof(
-      params.protocolInstanceId,
-      proofResult.proof,
-      proofResult.ipfsCid,
-      // Note: solanaService.anchorProof might need to be adapted if publicInputs
-      // also need to be stored on-chain or referenced.
-    );
+    const transactionId = await solanaService.anchorProof(proofResult.ipfsCid);
     logger.info('ZkSnarkService: Proof anchored on Solana', { transactionId });
     return { proofResult, transactionId };
   }

@@ -5,8 +5,9 @@ import { protocolService } from '@/services/protocolService';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest, { params }: { params: { templateId: string } }) {
-  const { templateId } = params;
+export async function GET(request: NextRequest, { params }: { params: Promise<{ templateId: string }> }) {
+  const resolvedParams = await params;
+  const { templateId } = resolvedParams;
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
   protocolService.initialize(context);
   const details = protocolService.getTemplateDetails(templateId, context);

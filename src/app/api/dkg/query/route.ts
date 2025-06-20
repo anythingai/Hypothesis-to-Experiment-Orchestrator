@@ -13,7 +13,7 @@ interface QueryPayload {
 export async function POST(request: NextRequest) {
   const { query } = (await request.json()) as QueryPayload;
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
-  dkgService.initialize(context);
+  // dkgService is now a mock service, no initialization needed
   try {
     // Determine if input is a raw SPARQL query or natural language
     const trimmed = query.trim();

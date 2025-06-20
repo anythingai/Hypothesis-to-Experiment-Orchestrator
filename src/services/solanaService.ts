@@ -1,370 +1,344 @@
-// src/services/solanaService.ts
-import { 
-  Connection, 
-  Keypair, 
-  PublicKey, 
-  Transaction, 
-  SystemProgram,
-  sendAndConfirmTransaction
-} from '@solana/web3.js';
-import { Token, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import * as fs from 'fs';
-import type { ElizaOSContext } from '../elizaos/types.ts';
-import { ApplicationError, ErrorCode } from '../utils/errorHandling.ts';
+/**
+ * Solana Service - Simplified Mock Implementation for Hackathon Demo
+ * 
+ * This is a simplified mock implementation for demonstration purposes.
+ * In production, this would connect to the actual Solana blockchain.
+ */
 
-// Default values, can be overridden by context.config
-const DEFAULT_SOLANA_RPC_URL = 'https://api.devnet.solana.com';
-const DEFAULT_SOLANA_KEYPAIR_PATH = './keypair.json';
-const DEFAULT_IS_PRODUCTION = process.env.NODE_ENV === 'production';
+import { logger } from '@/utils/logger';
 
-// Define interfaces for our service
-export interface ProofData {
-  pi_a: string[];
-  pi_b: string[][];
-  pi_c: string[];
-  protocol: string;
-  curve: string;
+interface SolanaTransaction {
+  signature: string;
+  from: string;
+  to: string;
+  amount: number;
+  status: 'pending' | 'confirmed' | 'failed';
+  timestamp: Date;
 }
 
-/**
- * Service for interacting with Solana blockchain
- */
+interface TokenBalance {
+  mint: string;
+  balance: number;
+  decimals: number;
+}
+
 class SolanaService {
-  private connection: Connection | null = null;
-  private keypair: Keypair | null = null;
-  private initialized = false;
-  private rpcUrl: string = DEFAULT_SOLANA_RPC_URL;
-  private keypairPath: string = DEFAULT_SOLANA_KEYPAIR_PATH;
-  private isProduction: boolean = DEFAULT_IS_PRODUCTION;
-  private logger: ElizaOSContext['logger'] = console; // Default logger
+  private mockTransactions: Map<string, SolanaTransaction> = new Map();
+  private mockBalances: Map<string, TokenBalance[]> = new Map();
+  private transactionCounter: number = 1000;
+
+  constructor() {
+    // Initialize with some sample data for demo
+    this.initializeMockData();
+  }
+
+  private initializeMockData() {
+    // Mock HEO token balances for demo accounts
+    const sampleBalances = [
+      {
+        publicKey: '11111111111111111111111111111112',
+        balances: [
+          {
+            mint: 'HEOTokenMint123456789',
+            balance: 1000,
+            decimals: 9
+          }
+        ]
+      }
+    ];
+
+    sampleBalances.forEach(account => {
+      this.mockBalances.set(account.publicKey, account.balances);
+    });
+
+    // Mock transactions
+    const sampleTransactions = [
+      {
+        signature: 'tx123456789abcdef',
+        from: '11111111111111111111111111111112',
+        to: '22222222222222222222222222222223',
+        amount: 50,
+        status: 'confirmed' as const,
+        timestamp: new Date('2025-06-20')
+      }
+    ];
+
+    sampleTransactions.forEach(tx => {
+      this.mockTransactions.set(tx.signature, tx);
+    });
+  }
+
+  private generateMockSignature(): string {
+    this.transactionCounter++;
+    return `mock-tx-${this.transactionCounter}-${Math.random().toString(16).substr(2, 8)}`;
+  }
 
   /**
-   * Initialize the Solana service
+   * Get SOL balance for a wallet address
    */
-  async initialize(context?: ElizaOSContext): Promise<boolean> {
-    if (this.initialized) return true;
-
-    if (context) {
-      this.logger = context.logger || console;
-      this.rpcUrl = (typeof context.config?.SOLANA_RPC_URL === 'string' && context.config.SOLANA_RPC_URL) 
-                      ? context.config.SOLANA_RPC_URL 
-                      : DEFAULT_SOLANA_RPC_URL;
-      this.keypairPath = (typeof context.config?.SOLANA_KEYPAIR_PATH === 'string' && context.config.SOLANA_KEYPAIR_PATH)
-                         ? context.config.SOLANA_KEYPAIR_PATH
-                         : DEFAULT_SOLANA_KEYPAIR_PATH;
-      // isProduction could also be taken from context if needed, e.g., context.mode === 'production'
-    }
-
+  async getBalance(publicKey: string): Promise<{ balance: number; lamports: number }> {
     try {
-      this.logger.info('SolanaService: Initializing...', { rpcUrl: this.rpcUrl, keypairPath: this.keypairPath });
-      // Create connection to Solana
-      this.connection = new Connection(this.rpcUrl, 'confirmed');
+      logger.info('Getting SOL balance (mock):', { publicKey });
+
+      // Mock balance - always return some SOL for demo
+      const balance = 1.5; // SOL
+      const lamports = balance * 1e9; // Convert to lamports
+
+      logger.info('Successfully retrieved SOL balance (mock):', { publicKey, balance, lamports });
+
+      return { balance, lamports };
+    } catch (error) {
+      logger.error('Failed to get SOL balance:', error);
+      throw new Error(`SOL balance check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get token balances for a wallet address
+   */
+  async getTokenBalances(publicKey: string): Promise<TokenBalance[]> {
+    try {
+      logger.info('Getting token balances (mock):', { publicKey });
+
+      const balances = this.mockBalances.get(publicKey) || [];
+
+      logger.info('Successfully retrieved token balances (mock):', { 
+        publicKey, 
+        tokenCount: balances.length 
+      });
+
+      return balances;
+    } catch (error) {
+      logger.error('Failed to get token balances:', error);
+      throw new Error(`Token balance check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Transfer SOL between wallets
+   */
+  async transferSol(options: {
+    from: string;
+    to: string;
+    amount: number; // in SOL
+    privateKey?: string;
+  }): Promise<{ signature: string; status: string }> {
+    try {
+      logger.info('Transferring SOL (mock):', options);
+
+      const signature = this.generateMockSignature();
       
-      // Load keypair - in production this should use secure key management
-      if (fs.existsSync(this.keypairPath)) {
-        const keypairDataRaw = fs.readFileSync(this.keypairPath, 'utf-8');
-        const keypairData = JSON.parse(keypairDataRaw) as number[];
-        this.keypair = Keypair.fromSecretKey(
-          Uint8Array.from(keypairData)
-        );
-      } else if (this.isProduction) {
-        this.logger.error('Solana keypair file not found in production.', { path: this.keypairPath });
-        throw new Error('Solana keypair file not found');
+      const transaction: SolanaTransaction = {
+        signature,
+        from: options.from,
+        to: options.to,
+        amount: options.amount,
+        status: 'confirmed',
+        timestamp: new Date()
+      };
+
+      this.mockTransactions.set(signature, transaction);
+
+      logger.info('Successfully transferred SOL (mock):', { signature, status: 'confirmed' });
+
+      return { signature, status: 'confirmed' };
+    } catch (error) {
+      logger.error('Failed to transfer SOL:', error);
+      throw new Error(`SOL transfer failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Transfer tokens between wallets
+   */
+  async transferToken(options: {
+    from: string;
+    to: string;
+    mint: string;
+    amount: number;
+    privateKey?: string;
+  }): Promise<{ signature: string; status: string }> {
+    try {
+      logger.info('Transferring token (mock):', options);
+
+      const signature = this.generateMockSignature();
+      
+      const transaction: SolanaTransaction = {
+        signature,
+        from: options.from,
+        to: options.to,
+        amount: options.amount,
+        status: 'confirmed',
+        timestamp: new Date()
+      };
+
+      this.mockTransactions.set(signature, transaction);
+
+      logger.info('Successfully transferred token (mock):', { signature, status: 'confirmed' });
+
+      return { signature, status: 'confirmed' };
+    } catch (error) {
+      logger.error('Failed to transfer token:', error);
+      throw new Error(`Token transfer failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get transaction details by signature
+   */
+  async getTransaction(signature: string): Promise<SolanaTransaction | null> {
+    try {
+      logger.info('Getting transaction (mock):', { signature });
+
+      const transaction = this.mockTransactions.get(signature);
+      
+      if (transaction) {
+        logger.info('Successfully retrieved transaction (mock):', { signature, status: transaction.status });
       } else {
-        this.logger.warn('Solana keypair file not found, generating new keypair for testing', { path: this.keypairPath });
-        this.keypair = Keypair.generate();
-        fs.writeFileSync(
-          this.keypairPath, 
-          JSON.stringify(Array.from(this.keypair.secretKey))
-        );
-        this.logger.info('SolanaService: New keypair generated and saved for development.', { path: this.keypairPath });
+        logger.warn('Transaction not found (mock):', { signature });
       }
 
-      const version = await this.connection.getVersion();
-      this.logger.info(`Solana connection established: ${version['solana-core']}`);
-      
-      this.initialized = true;
-      return true;
+      return transaction || null;
     } catch (error) {
-      this.logger.error('Failed to initialize Solana service:', { error: error instanceof Error ? error.message : String(error) });
-      if (this.isProduction) {
-        throw new ApplicationError(
-          'Failed to initialize Solana service', 
-          ErrorCode.SERVICE_UNAVAILABLE
-        );
-      }
+      logger.error('Failed to get transaction:', error);
+      throw new Error(`Transaction lookup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Validate a Solana public key format
+   */
+  validatePublicKey(publicKey: string): boolean {
+    try {
+      // Basic validation for base58 format (simplified)
+      const base58Regex = /^[1-9A-HJ-NP-Za-km-z]+$/;
+      const isValidLength = publicKey.length >= 32 && publicKey.length <= 44;
+      const isValidFormat = base58Regex.test(publicKey);
+
+      return isValidLength && isValidFormat;
+    } catch (error) {
+      logger.error('Failed to validate public key:', error);
       return false;
     }
   }
 
-  private async ensureInitialized(context?: ElizaOSContext): Promise<void> {
-    if (!this.initialized) {
-      this.logger.info('SolanaService: Not initialized, attempting to initialize on demand.');
-      if (!(await this.initialize(context))) {
-        throw new ApplicationError(
-          'Solana service auto-initialization failed', 
-          ErrorCode.SERVICE_UNAVAILABLE
-        );
-      }
-    }
-    if (!this.connection || !this.keypair) { // Should be caught by initialize, but as a safeguard
-        this.logger.error('SolanaService: Connection or keypair is null after initialization attempt.');
-        throw new ApplicationError(
-            'Solana service critical components missing after initialization', 
-            ErrorCode.INTERNAL_ERROR
-        );
-    }
-  }
-
   /**
-   * Anchor proof data on Solana blockchain
+   * Health check for Solana service
    */
-  async anchorProof(
-    protocolInstanceId: string, 
-    proof: ProofData, 
-    ipfsCid: string,
-    context?: ElizaOSContext
-  ): Promise<string> {
-    await this.ensureInitialized(context);
-    const currentLogger = context?.logger || this.logger;
-
-    // Null checks for connection and keypair are now implicitly handled by ensureInitialized
-    const connection = this.connection!;
-    const keypair = this.keypair!;
-
+  async healthCheck(): Promise<{ status: string; cluster?: string; blockHeight?: number }> {
     try {
-      const proofMetadata = {
-        type: 'zkSNARK_proof',
-        protocol_id: protocolInstanceId,
-        ipfs_cid: ipfsCid,
-        timestamp: Date.now()
-      };
-      
-      currentLogger.debug('Anchoring proof with metadata', { proofMetadata });
-      
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: keypair.publicKey,
-          toPubkey: keypair.publicKey, 
-          lamports: 1, 
-        })
-      );
-      
-      const signature = await sendAndConfirmTransaction(
-        connection,
-        transaction,
-        [keypair]
-      );
-      
-      currentLogger.info(`SolanaService: Anchored proof on Solana: ${signature}`, {
-        protocolInstanceId,
-        ipfsCid,
-      });
-      
-      return signature;
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      currentLogger.error('Failed to anchor proof on Solana:', { error: errMsg });
-      // In development or test, return a mock transaction ID instead of failing
-      if (!this.isProduction) {
-        const mockTxId = 'mock-transaction-id';
-        currentLogger.warn('SolanaService: Returning mock transaction ID in development.', { mockTxId });
-        return mockTxId;
-      }
-      throw new ApplicationError(
-        'Failed to anchor proof on Solana', 
-        ErrorCode.INTERNAL_ERROR,
-        { protocolInstanceId, ipfsCid }
-      );
-    }
-  }
-
-  /**
-   * Initialize a protocol on Solana
-   */
-  async initializeProtocol(
-    templateId: string,
-    initiatorPublicKey: string,
-    _parameters: Record<string, unknown>,
-    context?: ElizaOSContext
-  ): Promise<{ transactionId: string; protocolPda: string }> {
-    await this.ensureInitialized(context);
-    const currentLogger = context?.logger || this.logger;
-
-    const connection = this.connection!;
-    const keypair = this.keypair!;
-
-    try {
-      currentLogger.info('SolanaService: Attempting to initialize protocol on Solana', { templateId, initiatorPublicKey });
-      const initiatorPubkey = new PublicKey(initiatorPublicKey);
-      
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: keypair.publicKey,
-          toPubkey: initiatorPubkey,
-          lamports: 100, 
-        })
-      );
-      
-      const signature = await sendAndConfirmTransaction(
-        connection,
-        transaction,
-        [keypair]
-      );
-      
-      // Generate a mock PDA for this protocol - in a real scenario, this would be derived based on program ID and seeds.
-      const pdaBuffer = Buffer.from(`protocol-${templateId}-${Date.now().toString().slice(-6)}`);
-      const protocolPda = PublicKey.findProgramAddressSync([pdaBuffer], keypair.publicKey)[0].toBase58(); // Example, not a real program ID
-      
-      currentLogger.info(`SolanaService: Initialized protocol on Solana: ${signature}`, {
-        templateId,
-        protocolPda,
-        initiatorPublicKey
-      });
-      
+      // Mock health check - always returns healthy for demo
       return {
-        transactionId: signature,
-        protocolPda,
+        status: 'healthy',
+        cluster: 'devnet',
+        blockHeight: 123456789
       };
     } catch (error) {
-      currentLogger.error('Failed to initialize protocol on Solana:', { error: error instanceof Error ? error.message : String(error), templateId });
-      throw new ApplicationError(
-        'Failed to initialize protocol on Solana', 
-        ErrorCode.INTERNAL_ERROR,
-        { templateId, initiatorPublicKey }
-      );
+      logger.error('Solana health check failed:', error);
+      return {
+        status: 'unhealthy'
+      };
     }
   }
-  
+
   /**
-   * Get SOL balance for public key
+   * Mint new tokens (for demo purposes)
    */
-  async getBalance(publicKeyStr: string, context?: ElizaOSContext): Promise<number> {
-    await this.ensureInitialized(context);
-    const currentLogger = context?.logger || this.logger;
-    const connection = this.connection!;
-    
+  async mintTokens(options: {
+    mint: string;
+    to: string;
+    amount: number;
+    authority?: string;
+  }): Promise<{ signature: string; status: string }> {
     try {
-      const publicKey = new PublicKey(publicKeyStr);
-      const balance = await connection.getBalance(publicKey);
-      currentLogger.info(`SolanaService: Fetched balance for ${publicKeyStr}: ${balance / 1e9} SOL`);
-      return balance;
+      logger.info('Minting tokens (mock):', options);
+
+      const signature = this.generateMockSignature();
+
+      // Update mock balance
+      const currentBalances = this.mockBalances.get(options.to) || [];
+      const existingBalance = currentBalances.find(b => b.mint === options.mint);
+      
+      if (existingBalance) {
+        existingBalance.balance += options.amount;
+      } else {
+        currentBalances.push({
+          mint: options.mint,
+          balance: options.amount,
+          decimals: 9
+        });
+      }
+      
+      this.mockBalances.set(options.to, currentBalances);
+
+      logger.info('Successfully minted tokens (mock):', { signature, status: 'confirmed' });
+
+      return { signature, status: 'confirmed' };
     } catch (error) {
-      currentLogger.error('Failed to get SOL balance:', { error: error instanceof Error ? error.message : String(error), publicKeyStr });
-      throw new ApplicationError(
-        'Failed to get SOL balance', 
-        ErrorCode.INTERNAL_ERROR,
-        { publicKey: publicKeyStr }
-      );
+      logger.error('Failed to mint tokens:', error);
+      throw new Error(`Token minting failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
-  
+
   /**
-   * Transfer SPL token
+   * Initialize the Solana service with context
    */
-  async transferSplToken(
-    recipientPublicKeyStr: string,
-    tokenMintAddressStr: string,
-    amountLamports: number,
-    senderKeypair?: Keypair,
-    context?: ElizaOSContext
-  ): Promise<string> {
-    await this.ensureInitialized(context);
-    const currentLogger = context?.logger || this.logger;
-    const connection = this.connection!;
-    const payer = senderKeypair || this.keypair!;
+  initialize(context?: any): void {
+    const effectiveLogger = context?.logger || logger;
+    effectiveLogger.info('Initializing Solana service (mock)');
+    // Mock initialization - no actual setup needed for demo
+  }
 
-    if (!payer) {
-        currentLogger.error('SolanaService: Payer keypair is not available for SPL token transfer.');
-        throw new ApplicationError('Payer keypair not available', ErrorCode.INTERNAL_ERROR);
-      }
+  /**
+   * Shutdown the Solana service
+   */
+  async shutdown(context?: any): Promise<void> {
+    const effectiveLogger = context?.logger || logger;
+    effectiveLogger.info('Shutting down Solana service (mock)');
+    // Mock shutdown - no actual cleanup needed for demo
+  }
 
-    currentLogger.info('SolanaService: Attempting SPL Token transfer', { recipientPublicKeyStr, tokenMintAddressStr, amountLamports });
-    
+  /**
+   * Initialize protocol on-chain (for demo purposes)
+   */
+  async initializeProtocol(options: {
+    protocolId: string;
+    metadata?: any;
+    authority?: string;
+  }): Promise<{ signature: string; status: string }> {
     try {
-      const recipientPublicKey = new PublicKey(recipientPublicKeyStr);
-      const tokenMintPublicKey = new PublicKey(tokenMintAddressStr);
-      
-      // Get the token account of the sender
-      const fromTokenAccount = await Token.getAssociatedTokenAddress(
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-        TOKEN_PROGRAM_ID,
-        tokenMintPublicKey,
-        payer.publicKey
-      );
-      
-      // Get or create the token account of the recipient
-      const toTokenAccount = await Token.getAssociatedTokenAddress(
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-        TOKEN_PROGRAM_ID,
-        tokenMintPublicKey,
-        recipientPublicKey
-      );
-      
-      const transaction = new Transaction();
+      logger.info('Initializing protocol on-chain (mock):', options);
 
-      // Check if recipient account exists, if not, create it
-      const toTokenAccountInfo = await connection.getAccountInfo(toTokenAccount);
-      if (!toTokenAccountInfo) {
-        currentLogger.info("SolanaService: Recipient token account does not exist, creating it.", { account: toTokenAccount.toBase58() });
-        transaction.add(
-          Token.createAssociatedTokenAccountInstruction(
-            ASSOCIATED_TOKEN_PROGRAM_ID,
-            TOKEN_PROGRAM_ID,
-            tokenMintPublicKey,
-            toTokenAccount,
-            recipientPublicKey,
-            payer.publicKey
-          )
-        );
-      }
-      
-      transaction.add(
-        Token.createTransferInstruction(
-          TOKEN_PROGRAM_ID,
-          fromTokenAccount,
-          toTokenAccount,
-          payer.publicKey,
-          [],
-          amountLamports
-        )
-      );
-      
-      const signature = await sendAndConfirmTransaction(
-        connection,
-        transaction, 
-        [payer]
-      );
-      
-      currentLogger.info(`SolanaService: Transferred ${amountLamports} of token ${tokenMintAddressStr} to ${recipientPublicKeyStr}. Tx: ${signature}`);
+      const signature = this.generateMockSignature();
+
+      logger.info('Successfully initialized protocol (mock):', { signature, status: 'confirmed' });
+
+      return { signature, status: 'confirmed' };
+    } catch (error) {
+      logger.error('Failed to initialize protocol:', error);
+      throw new Error(`Protocol initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Anchor proof data to blockchain (for demo purposes)
+   */
+  async anchorProof(proofData: any, metadata?: any): Promise<string> {
+    try {
+      logger.info('Anchoring proof to blockchain (mock):', { metadata });
+
+      const signature = this.generateMockSignature();
+
+      logger.info('Successfully anchored proof (mock):', { signature, status: 'confirmed' });
+
       return signature;
     } catch (error) {
-      currentLogger.error('Failed to transfer SPL token:', { 
-        error: error instanceof Error ? error.message : String(error), 
-        recipient: recipientPublicKeyStr, 
-        tokenMint: tokenMintAddressStr 
-      });
-      throw new ApplicationError(
-        'Failed to transfer SPL token', 
-        ErrorCode.INTERNAL_ERROR,
-        { recipient: recipientPublicKeyStr, tokenMint: tokenMintAddressStr }
-      );
+      logger.error('Failed to anchor proof:', error);
+      throw new Error(`Proof anchoring failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }
-  
-  /**
-   * Cleanup and close connection
-   */
-  async shutdown(context?: ElizaOSContext): Promise<void> {
-    const currentLogger = context?.logger || this.logger;
-    // In a real app, you might close connections or release resources here.
-    // For Solana Connection, it doesn't typically need explicit closing unless managing websockets.
-    this.initialized = false;
-    this.connection = null;
-    this.keypair = null; // Clear sensitive data
-    currentLogger.info('SolanaService: Shutdown complete.');
   }
 }
 
-// Export a singleton instance of the service
-export const solanaService = new SolanaService(); 
+// Export singleton instance
+export const solanaService = new SolanaService();
+export default solanaService; 

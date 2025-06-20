@@ -1,74 +1,31 @@
 /**
- * A simple browser-compatible logger for Edge runtime
- * This avoids using Node.js modules that aren't supported in Edge
+ * Browser-safe logger implementation
+ * 
+ * Provides console logging functionality that works in browser environments
+ * where winston is not available.
  */
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
-
-interface LogEntry {
-  level: LogLevel;
-  message: string;
-  timestamp: string;
-  data?: unknown;
+interface Logger {
+  info: (message: string, meta?: any) => void;
+  error: (message: string, meta?: any) => void;
+  warn: (message: string, meta?: any) => void;
+  debug: (message: string, meta?: any) => void;
 }
 
-class BrowserLogger {
-  private minLevel: LogLevel;
-  
-  constructor(level: LogLevel = 'info') {
-    this.minLevel = level;
+const createBrowserLogger = (): Logger => ({
+  info: (message: string, meta?: any) => {
+    console.log(`[INFO] ${message}`, meta || '');
+  },
+  error: (message: string, meta?: any) => {
+    console.error(`[ERROR] ${message}`, meta || '');
+  },
+  warn: (message: string, meta?: any) => {
+    console.warn(`[WARN] ${message}`, meta || '');
+  },
+  debug: (message: string, meta?: any) => {
+    console.debug(`[DEBUG] ${message}`, meta || '');
   }
-  
-  private shouldLog(level: LogLevel): boolean {
-    const levelPriority: Record<LogLevel, number> = {
-      debug: 0,
-      info: 1,
-      warn: 2,
-      error: 3
-    };
-    
-    return levelPriority[level] >= levelPriority[this.minLevel];
-  }
-  
-  private formatLogEntry(level: LogLevel, message: string, data?: unknown): LogEntry {
-    return {
-      level,
-      message,
-      timestamp: new Date().toISOString(),
-      data
-    };
-  }
-  
-  debug(message: string, data?: unknown): void {
-    if (this.shouldLog('debug')) {
-      const entry = this.formatLogEntry('debug', message, data);
-      console.debug(`[DEBUG] ${entry.timestamp} - ${entry.message}`, entry.data || '');
-    }
-  }
-  
-  info(message: string, data?: unknown): void {
-    if (this.shouldLog('info')) {
-      const entry = this.formatLogEntry('info', message, data);
-      console.info(`[INFO] ${entry.timestamp} - ${entry.message}`, entry.data || '');
-    }
-  }
-  
-  warn(message: string, data?: unknown): void {
-    if (this.shouldLog('warn')) {
-      const entry = this.formatLogEntry('warn', message, data);
-      console.warn(`[WARN] ${entry.timestamp} - ${entry.message}`, entry.data || '');
-    }
-  }
-  
-  error(message: string, data?: unknown): void {
-    if (this.shouldLog('error')) {
-      const entry = this.formatLogEntry('error', message, data);
-      console.error(`[ERROR] ${entry.timestamp} - ${entry.message}`, entry.data || '');
-    }
-  }
-}
+});
 
-// Export a singleton instance
-export const browserLogger = new BrowserLogger(
-  (process.env.LOG_LEVEL as LogLevel) || 'info'
-); 
+export const logger = createBrowserLogger();
+export default logger; 

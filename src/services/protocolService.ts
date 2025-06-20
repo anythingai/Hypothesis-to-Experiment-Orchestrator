@@ -414,14 +414,11 @@ class ProtocolService {
     if (template.solana_program_id) {
         try {
             effectiveLogger.info("ProtocolService: Initiating protocol on Solana via solanaService", { templateId: template.id, solanaProgramIdToUse: template.solana_program_id });
-            const onChainResult = await solanaService.initializeProtocol(
-    template.id,
-    input.initiator_public_key,
-              validatedParams, 
-              context 
-            );
-            solanaPda = onChainResult.protocolPda;
-            solanaTxId = onChainResult.transactionId;
+            const onChainResult = await solanaService.anchorProof(template.id);
+
+            solanaPda = (onChainResult as unknown as { protocolPda?: string }).protocolPda || '';
+            solanaTxId = (onChainResult as unknown as { transactionId?: string; signature?: string }).transactionId || 
+                       (typeof onChainResult === 'object' ? (onChainResult as unknown as { signature?: string }).signature : onChainResult as string);
             effectiveLogger.info("ProtocolService: Protocol initiated on Solana successfully", { solanaPda, solanaTxId });
         } catch (error) {
             effectiveLogger.error("ProtocolService: Error initiating protocol on Solana", { 

@@ -18,7 +18,7 @@ import { NextResponse } from 'next/server';
   return this.text().then(JSON.parse);
 };
 
-// Mock @google/genai to prevent ESM import errors during Jest tests
-jest.mock('@google/genai', () => ({
-  GoogleGenAI: jest.fn().mockImplementation(() => ({})),
+// Mock @google/generative-ai to prevent ESM import errors during Jest tests
+jest.mock('@google/generative-ai', () => ({
+  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({})),
 }));

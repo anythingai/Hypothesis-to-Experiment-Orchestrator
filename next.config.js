@@ -1,90 +1,95 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
+  // Output standalone build for Docker/Cloud deployment
+  output: 'standalone',
+  
+  // Enable static file optimization
   compress: true,
+  poweredByHeader: false,
+  
+  // External packages that should not be bundled by webpack for server components
+  serverExternalPackages: [
+    'snarkjs',
+    'circomlib',
+    'circom',
+    'ffjavascript',
+    'winston',
+    '@web3-storage/w3up-client'
+  ],
+
+  // Webpack configuration to handle specific modules
+  webpack: (config, { buildId: _buildId, dev: _dev, isServer, defaultLoaders: _defaultLoaders, webpack: _webpack }) => {
+    // Handle .node files (for native modules like circom)
+    config.module.rules.push({
+      test: /\.node$/,
+      use: 'node-loader',
+    });
+
+    // Externalize packages for server-side
+    if (isServer) {
+      config.externals.push({
+        'snarkjs': 'snarkjs',
+        'circomlib': 'circomlib',
+        'circom': 'circom',
+        'ffjavascript': 'ffjavascript',
+        'winston': 'winston',
+        '@web3-storage/w3up-client': '@web3-storage/w3up-client'
+      });
+    }
+
+    // Handle ESM packages properly
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': './src',
+    };
+
+    return config;
+  },
+
+  // Environment variables to expose to the browser
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+
+  // Headers for security and CORS
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: process.env.NODE_ENV === 'development' ? '*' : 'https://*.cloud.run',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
+          },
+        ],
+      },
+    ];
+  },
+
+  // Image optimization settings
   images: {
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**',
-        port: '',
-        pathname: '/**',
       },
     ],
   },
-  async headers() {
-    return [
-      {
-        // Apply these headers to all routes
-        source: '/(.*)',
-        headers: [
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'X-XSS-Protection', value: '1; mode=block' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-        ],
-      },
-    ];
-  },
-  // Configure ESLint for proper linting
-  eslint: {
-    dirs: ['src'], // Only run ESLint on src directory during builds
-    ignoreDuringBuilds: true, // Continue builds even if there are ESLint warnings or invalid options
-  },
-  // Configure output directory for build
-  distDir: '.next',
-  // Edge runtime compatibility - disable EdgeRuntime
-  experimental: {
-    serverComponentsExternalPackages: ['snarkjs', 'circom', 'ipfs-http-client', 'dkg.js', 'web-streams-polyfill'],
-    disableOptimizedLoading: true,
-  },
-  // Configure runtime environment
-  serverRuntimeConfig: {
-    // Will only be available on the server side
-    mySecret: process.env.JWT_SECRET,
-  },
-  publicRuntimeConfig: {
-    // Will be available on both server and client
-    staticFolder: '/static',
-  },
-  // Force all API routes to use Node.js runtime
-  typescript: {
-    // Ignore TypeScript errors during build
-    ignoreBuildErrors: true,
-  },
-  // Webpack configuration to handle Node.js modules and fix build issues
-  webpack: (config, { isServer }) => {
-    // Fix for missing fetch.node and other Node.js modules
-    if (isServer) {
-      config.externals = [...(config.externals || [])];
-      
-      // Handle modules that cause issues during build
-      const nodeModules = ['snarkjs', 'circom', 'ipfs-http-client', 'node-fetch', 'dkg.js', 'web-streams-polyfill'];
-      nodeModules.forEach(mod => {
-        config.externals.push((context, request, callback) => {
-          if (request === mod || request.startsWith(`${mod}/`)) {
-            return callback(null, `commonjs ${request}`);
-          }
-          callback();
-        });
-      });
-    }
-    
-    // Fallback for Node.js modules in browser
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      path: false,
-      os: false,
-      crypto: false,
-      stream: false,
-      buffer: false,
-      util: false,
-    };
 
-    return config;
+  // Experimental features for Next.js 15
+  experimental: {
+    // Server-side compilation improvements
+    forceSwcTransforms: true,
+    disableOptimizedLoading: true
   },
-}
+};
 
 module.exports = nextConfig; 

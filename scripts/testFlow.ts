@@ -6,13 +6,12 @@ import { BLOCKCHAIN_IDS } from 'dkg.js/constants';
 // DID prefix for constructing UAL
 const DID_PREFIX = 'did:dkg';
 // Import services via CommonJS for ts-node
-import { hypothesisService } from '../src/services/hypothesisService.ts';
-import { labAutomationService } from '../src/services/labAutomationService.ts';
-import { zkSnarkService } from '../src/services/zkSnarkService.ts';
-import { ipfsService } from '../src/services/ipfsService.ts';
-import { solanaService } from '../src/services/solanaService.ts';
-import type { ElizaOSContext } from '../src/elizaos/types.ts';
-import type { ExperimentalData } from '../src/services/zkSnarkService.ts';
+import { hypothesisService } from '../src/services/hypothesisService';
+import { labAutomationService } from '../src/services/labAutomationService';
+import { zkSnarkService } from '../src/services/zkSnarkService';
+import { ipfsService } from '../src/services/ipfsService';
+import type { ElizaOSContext } from '../src/elizaos/types';
+import type { ExperimentalData } from '../src/services/zkSnarkService';
 
 // Add this near the top, after imports
 interface DkgExtendedConfig {
@@ -38,8 +37,8 @@ async function main() {
   hypothesisService.initialize(context);
   labAutomationService.initialize(context);
   zkSnarkService.initialize(context);
-  ipfsService.initialize(context);
-  await solanaService.initialize(context);
+  // ipfsService is now a simple mock service, no initialization needed
+  // solanaService is now a simple mock service, no initialization needed
 
   const userQuery = 'Test hypothesis generation';
   console.log('1. Generating hypotheses...');
@@ -80,7 +79,8 @@ async function main() {
     solanaTx: transactionId,
     timestamp: new Date().toISOString(),
   };
-  const metadataCid = await ipfsService.store(JSON.stringify(metadata));
+  const metadataUpload = await ipfsService.upload(metadata, { filename: 'metadata.json' });
+  const metadataCid = metadataUpload.hash;
   console.log('Metadata IPFS CID:', metadataCid);
 
   console.log('5. Publishing metadata as a Knowledge Asset on DKG...');

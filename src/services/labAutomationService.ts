@@ -1,5 +1,6 @@
 import type { ElizaOSContext } from '../elizaos/types.ts';
-import { internalHelpers } from './hypothesisService.ts'; // Use Gemini helper for mock generation and analysis
+import { logger } from '../utils/logger';
+import { internalHelpers } from './hypothesisService'; // Use Gemini helper for mock generation and analysis
 
 export class LabAutomationService {
   // Fallback to mock if no ECL credentials provided

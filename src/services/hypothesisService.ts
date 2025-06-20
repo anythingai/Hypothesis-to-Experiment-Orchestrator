@@ -1,20 +1,18 @@
 // src/services/hypothesisService.ts
 // import { logger } from "../utils/logger"; // Logger will be passed via context
-import type { ElizaOSContext } from "../elizaos/types.ts";
+import type { ElizaOSContext } from "../elizaos/types";
 // Import necessary types. GenerateContentRequest and GenerativeModel are not directly exported.
 import {
-  GoogleGenAI,
-} from "@google/genai";
-import type {
-  HarmCategory,
-  HarmBlockThreshold,
-  GenerationConfig,
-  Content,
-} from "@google/genai";
+  GoogleGenerativeAI,
+  type HarmCategory,
+  type HarmBlockThreshold,
+  type GenerationConfig,
+  type Content,
+} from "@google/generative-ai";
 import * as N3 from 'n3';
 // const { DataFactory } = N3; // Removed unused DataFactory destructuring
-import { oxigraphCacheService, type SparqlQueryResult } from './oxigraphCacheService.ts';
-import { ipfsService } from './ipfsService.ts';
+import { oxigraphCacheService, type SparqlQueryResult } from './oxigraphCacheService';
+import { ipfsService } from './ipfsService';
 // import { dkgService } from './dkgService'; // dkgService is not directly used in hypothesis generation flow after context is in OxiGraph. It's used for publishing.
 
 // Environment variable for the Gemini API Key
@@ -234,70 +232,39 @@ export const internalHelpers = {
       category: HarmCategory;
       threshold: HarmBlockThreshold;
     }>;
-    /** Optional builder for GoogleGenAI instance, for testing purposes */
-    _genAIInstanceBuilder?: (apiKey: string) => GoogleGenAI;
+    /** Optional builder for GoogleGenerativeAI instance, for testing purposes */
+    _genAIInstanceBuilder?: (apiKey: string) => GoogleGenerativeAI;
   }, logger?: ElizaOSContext['logger']): Promise<string[]> { // Use context's logger type
     const effectiveLogger = logger || console;
-    // const effectiveModelName = params.modelName || DEFAULT_GEMINI_MODEL_NAME; // Model name comes from context or input
-    const effectiveModelName = params.modelName; // Expect modelName to be passed in now
-    effectiveLogger.info(
-      "callGeminiProService: Calling Gemini Pro service using ai.models.generateContent",
-      {
-        modelName: effectiveModelName,
-        apiKeyProvided: !!params.apiKey,
-      },
-    );
-
-    if (!params.apiKey) {
-      effectiveLogger.error("callGeminiProService: API key is missing.");
-      throw new Error("Gemini API key is required but was not provided.");
-    }
-    if (!effectiveModelName) {
-      effectiveLogger.error("callGeminiProService: Model name is missing.");
-      throw new Error("Gemini model name is required but was not provided.");
-    }
-
     try {
-      const genAI: GoogleGenAI = params._genAIInstanceBuilder
+      effectiveLogger.debug('callGeminiProService: Calling Gemini Pro with prompt', { prompt: params.prompt });
+
+      const genAI: GoogleGenerativeAI = params._genAIInstanceBuilder
         ? params._genAIInstanceBuilder(params.apiKey)
-        : new GoogleGenAI({ apiKey: params.apiKey });
+        : new GoogleGenerativeAI(params.apiKey);
 
-      const requestContents: Content[] =
-        internalHelpers.normalizeQueryToContents(params.prompt);
-
-      // Construct the request object for ai.models.generateContent
-      // Model name is part of this request object.
-      const request = {
-        model: effectiveModelName, // Specify the model directly in the request
-        contents: requestContents,
-        safetySettings: params.safetySettings,
+      const model = genAI.getGenerativeModel({ 
+        model: params.modelName || "gemini-2.5-pro-preview-05-06",
         generationConfig: params.generationConfig,
-      };
-
-      // Call generateContent directly on ai.models
-      const result = await genAI.models.generateContent(request);
-      // Access text directly from the result, assuming GenerateContentResponse has a text property
-      const textContent = result.text; // Corrected: .text is a property, not a method
-
-      // Ensure textContent is a string before proceeding
-      if (typeof textContent !== "string") {
-        effectiveLogger.error(
-          "callGeminiProService: Invalid API response structure from Gemini or text content missing",
-          { response: result },
-        );
-        throw new Error(
-          "Invalid API response from Gemini service. Expected a text string.",
-        );
-      }
-      return [textContent]; // Return the validated string content
-    } catch (error) {
-      effectiveLogger.error("callGeminiProService: Error during Gemini API call", {
-        errorMessage: error instanceof Error ? error.message : String(error),
-        modelName: effectiveModelName,
+        safetySettings: params.safetySettings,
       });
-      throw new Error(
-        `Error communicating with Gemini service: ${error instanceof Error ? error.message : String(error)}`,
-      );
+
+      // Convert prompt to proper format for generateContent
+      const prompt = typeof params.prompt === 'string' 
+        ? params.prompt 
+        : Array.isArray(params.prompt) 
+          ? params.prompt.map(p => typeof p === 'string' ? p : p.parts?.[0]?.text || '').join('\n')
+          : params.prompt.parts?.[0]?.text || '';
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      effectiveLogger.debug('callGeminiProService: Received response from Gemini Pro');
+
+      // Return an array for compatibility with existing code
+      return [response.text()];
+    } catch (error) {
+      effectiveLogger.error('callGeminiProService: Error calling Gemini Pro', { error });
+      throw error;
     }
   },
 
@@ -313,77 +280,46 @@ export const internalHelpers = {
       | "CLUSTERING";
     title?: string; 
     outputDimensionality?: number; 
-    _genAIInstanceBuilder?: (apiKey: string) => GoogleGenAI;
+    _genAIInstanceBuilder?: (apiKey: string) => GoogleGenerativeAI;
   }, logger?: ElizaOSContext['logger']): Promise<Array<number[]>> { // Use context's logger type
-    const effectiveLogger = logger || console;
-    // const effectiveModelName = params.modelName || "text-embedding-004"; // Default embedding model, or get from context
-    const effectiveModelName = params.modelName; // Expect model name to be passed
-    effectiveLogger.info("callGeminiEmbeddingService: Calling Gemini Embedding service", {
-        modelName: effectiveModelName,
-      numTexts: params.texts.length,
-        apiKeyProvided: !!params.apiKey,
-    });
+    const effectiveLogger = logger || console; // Fallback logger
+    try {
+      effectiveLogger.debug('callGeminiEmbeddingService: Calling Gemini Embedding Service', { texts: params.texts });
 
-    if (!params.apiKey) {
-      effectiveLogger.error("callGeminiEmbeddingService: API key is missing.");
-      throw new Error("Gemini API key for embeddings is required.");
-    }
-    if (!effectiveModelName) {
-      effectiveLogger.error("callGeminiEmbeddingService: Embedding model name is missing.");
-      throw new Error("Gemini Embedding model name is required.");
-    }
+      const genAI: GoogleGenerativeAI = params._genAIInstanceBuilder && params.apiKey
+        ? params._genAIInstanceBuilder(params.apiKey)
+        : new GoogleGenerativeAI(params.apiKey);
 
-    if (!params.texts || params.texts.length === 0) {
-      effectiveLogger.warn("callGeminiEmbeddingService: No texts provided to embed.");
-      return [];
-    }
+      const model = genAI.getGenerativeModel({ 
+        model: params.modelName || "text-embedding-004"
+      });
 
-    const genAI: GoogleGenAI = params._genAIInstanceBuilder
-      ? params._genAIInstanceBuilder(params.apiKey)
-      : new GoogleGenAI({ apiKey: params.apiKey });
+      const allEmbeddings: Array<number[]> = [];
 
-    const allEmbeddings: Array<number[]> = [];
-
-    for (const text of params.texts) {
-      try {
-        // const request = { // Removed unused request variable
-        //   model: effectiveModelName,
-        //   contents: [{ role: "user", parts: [{ text }] }], // Plural 'contents' taking an array with one Content item
-        //   taskType: params.taskType,
-        //   title: params.title, // title is only valid for RETRIEVAL_DOCUMENT
-        //   outputDimensionality: params.outputDimensionality,
-        // };
-        
-        // Adjust title based on taskType
-        const actualTaskType = params.taskType || "RETRIEVAL_DOCUMENT"; // Default if not provided
-        const actualRequest = {
-            model: effectiveModelName,
-            contents: [{ role: "user", parts: [{text}] }], // Plural 'contents' taking an array with one Content item
-            taskType: actualTaskType,
-            title: actualTaskType === "RETRIEVAL_DOCUMENT" ? params.title : undefined,
-            outputDimensionality: params.outputDimensionality
-        };
-
-        const result = await genAI.models.embedContent(actualRequest);
-        
-        if (result && result.embeddings && Array.isArray(result.embeddings) && result.embeddings.length > 0 && result.embeddings[0].values) {
-          allEmbeddings.push(result.embeddings[0].values);
-        } else {
-          effectiveLogger.error("callGeminiEmbeddingService: Invalid API response structure for a text or embedding missing", { text, response: result });
-          // Decide: throw, or skip this text, or add null/empty array? For now, skip.
-          // To maintain output array length matching input, could push an empty array or throw.
-          // Throwing might be better to signal a partial failure.
-          throw new Error(`Failed to get embedding for text: ${text.substring(0, 50)}...`);
+      for (const text of params.texts) {
+        try {
+                  // Simplified API call for hackathon compatibility
+        const result = await model.embedContent(text);
+          
+          if (result && result.embedding && result.embedding.values) {
+            allEmbeddings.push(result.embedding.values);
+          } else {
+            effectiveLogger.error("callGeminiEmbeddingService: Invalid API response structure for a text or embedding missing", { text, response: result });
+            throw new Error(`Failed to get embedding for text: ${text.substring(0, 50)}...`);
+          }
+        } catch (error) {
+          effectiveLogger.error(`callGeminiEmbeddingService: Error during Gemini embedding API call for text: ${text.substring(0,50)}...`, {
+            errorMessage: error instanceof Error ? error.message : String(error),
+            modelName: params.modelName || "text-embedding-004",
+          });
+          throw error; 
         }
-      } catch (error) {
-        effectiveLogger.error(`callGeminiEmbeddingService: Error during Gemini embedding API call for text: ${text.substring(0,50)}...`, {
-          errorMessage: error instanceof Error ? error.message : String(error),
-          modelName: effectiveModelName,
-        });
-        throw error; 
       }
+      return allEmbeddings;
+    } catch (error) {
+      effectiveLogger.error('callGeminiEmbeddingService: Error calling Gemini Embedding Service', { error });
+      throw error;
     }
-    return allEmbeddings;
   },
 
   cosineSimilarity(vecA: number[], vecB: number[]): number {
@@ -644,7 +580,7 @@ const generateAndScoreHypotheses = async (
   input: HypothesisGenerationInput,
   context: ElizaOSContext, // Context is now non-optional
 ): Promise<Hypothesis[]> => {
-  const { query, corpus_filters: _corpus_filters, generation_params } = input;
+  const { query, generation_params } = input;
   const effectiveLogger = context.logger || console; // Use context logger or fallback
 
   effectiveLogger.info("generateAndScoreHypotheses: Starting hypothesis generation and scoring", { query, /* _corpus_filters, */ generation_params });
@@ -936,7 +872,7 @@ class HypothesisService {
       category: HarmCategory;
       threshold: HarmBlockThreshold;
     }>;
-    _genAIInstanceBuilder?: (apiKey: string) => GoogleGenAI;
+    _genAIInstanceBuilder?: (apiKey: string) => GoogleGenerativeAI;
   }): Promise<string[]> {
     const effectiveModelName = params.modelName || this.generationModelName;
     this.logger.info("HypothesisService._callGeminiProService", { modelName: effectiveModelName, apiKeySet: !!this.geminiApiKey });
@@ -945,16 +881,24 @@ class HypothesisService {
     try {
       const genAI = params._genAIInstanceBuilder && this.geminiApiKey 
         ? params._genAIInstanceBuilder(this.geminiApiKey) 
-        : new GoogleGenAI({ apiKey: this.geminiApiKey });
+        : new GoogleGenerativeAI(this.geminiApiKey);
       
-      const request = {
+      const model = genAI.getGenerativeModel({ 
         model: effectiveModelName,
-        contents: this._normalizeQueryToContents(params.prompt),
-        safetySettings: params.safetySettings,
         generationConfig: params.generationConfig,
-      };
-      const result = await genAI.models.generateContent(request);
-      const textContent = result.text;
+        safetySettings: params.safetySettings,
+      });
+
+      // Convert prompt to simple string format
+      const prompt = typeof params.prompt === 'string' 
+        ? params.prompt 
+        : Array.isArray(params.prompt) 
+          ? params.prompt.map(p => typeof p === 'string' ? p : p.parts?.[0]?.text || '').join('\n')
+          : params.prompt.parts?.[0]?.text || '';
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const textContent = response.text();
 
       if (typeof textContent !== "string") {
         this.logger.error(
@@ -978,7 +922,7 @@ class HypothesisService {
     taskType?: "SEMANTIC_SIMILARITY" | "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY" | "CLASSIFICATION" | "CLUSTERING";
     title?: string; 
     outputDimensionality?: number; 
-    _genAIInstanceBuilder?: (apiKey: string) => GoogleGenAI;
+    _genAIInstanceBuilder?: (apiKey: string) => GoogleGenerativeAI;
   }): Promise<Array<number[]>> { 
     const effectiveModelName = params.modelName || this.embeddingModelName;
     this.logger.info("HypothesisService._callGeminiEmbeddingService", { modelName: effectiveModelName, numTexts: params.texts.length, apiKeySet: !!this.geminiApiKey });
@@ -986,25 +930,22 @@ class HypothesisService {
     if (!effectiveModelName) throw new Error("Gemini embedding model name not configured.");
     if (!params.texts || params.texts.length === 0) return [];
     
-    const genAI: GoogleGenAI = params._genAIInstanceBuilder && this.geminiApiKey
+    const genAI: GoogleGenerativeAI = params._genAIInstanceBuilder && this.geminiApiKey
       ? params._genAIInstanceBuilder(this.geminiApiKey)
-      : new GoogleGenAI({ apiKey: this.geminiApiKey });
+      : new GoogleGenerativeAI(this.geminiApiKey);
     
+    const model = genAI.getGenerativeModel({ 
+      model: effectiveModelName
+    });
+
     const allEmbeddings: Array<number[]> = [];
 
     for (const text of params.texts) {
       try {
-        const actualTaskType = params.taskType || "RETRIEVAL_DOCUMENT";
-        const actualRequest = {
-            model: effectiveModelName,
-            contents: [{ role: "user", parts: [{text}] }],
-            taskType: actualTaskType,
-            title: actualTaskType === "RETRIEVAL_DOCUMENT" ? params.title : undefined,
-            outputDimensionality: params.outputDimensionality
-        };
-        const result = await genAI.models.embedContent(actualRequest);
-        if (result && result.embeddings && Array.isArray(result.embeddings) && result.embeddings.length > 0 && result.embeddings[0].values) {
-          allEmbeddings.push(result.embeddings[0].values);
+        const result = await model.embedContent(text);
+        
+        if (result && result.embedding && result.embedding.values) {
+          allEmbeddings.push(result.embedding.values);
         } else {
           this.logger.error("HypothesisService._callGeminiEmbeddingService: Invalid API response structure for a text or embedding missing", { text, response: result });
           throw new Error(`Failed to get embedding for text: ${text.substring(0, 50)}...`);

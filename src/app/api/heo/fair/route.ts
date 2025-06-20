@@ -23,8 +23,7 @@ export async function POST(request: NextRequest) {
   const input = parse.data as FairPackageInput;
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
 
-  // Initialize IPFS client before storing JSON-LD
-  ipfsService.initialize(context);
+  // IPFS service is already initialized in the mock implementation
 
   try {
     // Store JSON-LD on IPFS
