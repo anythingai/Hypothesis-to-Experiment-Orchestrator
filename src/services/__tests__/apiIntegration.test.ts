@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
-// Mock Next.js API environment
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _mockNextRequest = {
   nextUrl: { searchParams: new URLSearchParams() },
   json: jest.fn(),
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _mockNextResponse = {
   json: jest.fn((data: unknown) => ({ data })),
   status: jest.fn().mockReturnThis(),
@@ -326,6 +327,7 @@ describe('HEO API Integration Tests', () => {
         // Mock rate limiting logic - 100 requests per hour per user
         const maxRequests = 100;
         const currentHour = Math.floor(Date.now() / (1000 * 60 * 60));
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const _key = `${userId}:${endpoint}:${currentHour}`;
         
         // In real implementation, this would use Redis or similar

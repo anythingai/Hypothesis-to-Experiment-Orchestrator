@@ -12,6 +12,7 @@ interface QueryPayload {
 
 export async function POST(request: NextRequest) {
   const { query } = (await request.json()) as QueryPayload;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
   // dkgService is now a mock service, no initialization needed
   try {
@@ -29,7 +30,7 @@ SELECT DISTINCT ?subject ?predicate ?object WHERE {
   FILTER(CONTAINS(LCASE(STR(?object)), LCASE(\"${sanitized}\")))
 } LIMIT 20`;
     }
-    const data = await dkgService.query(sparqlQuery);
+    const data = await dkgService.query(sparqlQuery as unknown as Record<string, unknown>);
     return NextResponse.json({ success: true, data });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

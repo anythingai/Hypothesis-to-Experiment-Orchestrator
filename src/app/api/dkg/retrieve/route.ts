@@ -7,10 +7,12 @@ export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { ual, contentType } = body as { ual?: string; contentType?: 'all' | 'public' | 'private' };
   if (!ual) {
     return NextResponse.json({ success: false, error: 'Missing ual in request body' }, { status: 400 });
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
   // dkgService is now a mock service, no initialization needed
   try {

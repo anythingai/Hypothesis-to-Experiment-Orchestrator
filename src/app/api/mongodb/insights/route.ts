@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { mongodbService } from '../../../../services/mongodbService';
 import { logger } from '../../../../utils/logger';
 
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const datasetId = searchParams.get('datasetId');
 
     await mongodbService.initialize();

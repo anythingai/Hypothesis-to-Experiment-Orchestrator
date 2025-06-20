@@ -283,6 +283,7 @@ class SolanaService {
   /**
    * Initialize the Solana service with context
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   initialize(context?: any): void {
     const effectiveLogger = context?.logger || logger;
     effectiveLogger.info('Initializing Solana service (mock)');
@@ -292,6 +293,7 @@ class SolanaService {
   /**
    * Shutdown the Solana service
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async shutdown(context?: any): Promise<void> {
     const effectiveLogger = context?.logger || logger;
     effectiveLogger.info('Shutting down Solana service (mock)');
@@ -303,6 +305,7 @@ class SolanaService {
    */
   async initializeProtocol(options: {
     protocolId: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata?: any;
     authority?: string;
   }): Promise<{ signature: string; status: string }> {
@@ -323,6 +326,7 @@ class SolanaService {
   /**
    * Anchor proof data to blockchain (for demo purposes)
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async anchorProof(proofData: any, metadata?: any): Promise<string> {
     try {
       logger.info('Anchoring proof to blockchain (mock):', { metadata });

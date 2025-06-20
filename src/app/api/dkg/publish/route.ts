@@ -7,14 +7,16 @@ export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { content, options } = body as { content: unknown; options?: { epochsNum: number } };
   if (!content) {
     return NextResponse.json({ success: false, error: 'Missing content in request body' }, { status: 400 });
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
   // dkgService is now a mock service, no initialization needed
   try {
-    const data = await dkgService.publish(content);
+    const data = await dkgService.publish(content as Record<string, unknown>);
     return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json(

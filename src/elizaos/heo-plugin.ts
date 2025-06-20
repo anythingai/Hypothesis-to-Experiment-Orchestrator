@@ -66,7 +66,7 @@ export const heoPlugin: Plugin = {
     protocolService.initialize(context); // Assuming protocolService has an initialize method
           // dkgService is now a mock service, no initialization needed
     oxigraphCacheService.initialize(context);
-    ipfsService.initialize(context);
+    ipfsService.initialize(context.config as Record<string, unknown>);
     solanaService.initialize(context);
     labAutomationService.initialize(context);
     zkSnarkService.initialize(context);

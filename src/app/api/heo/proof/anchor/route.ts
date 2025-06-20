@@ -1,18 +1,11 @@
 import { z } from 'zod';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { solanaService } from '@/services/solanaService';
 import type { ElizaOSContext } from '@/elizaos/types';
-// ProofData type defined inline
-interface ProofData {
-  hash: string;
-  publicInputs: string[];
-  proof: any;
-}
 
 const anchorSchema = z.object({
   protocolInstanceId: z.string(),
-  proof: z.any(),
+  proof: z.record(z.string(), z.unknown()),
   ipfsCid: z.string(),
 });
 
@@ -24,7 +17,9 @@ export async function POST(request: NextRequest) {
   if (!parse.success) {
     return NextResponse.json({ success: false, errors: parse.error.errors }, { status: 400 });
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { protocolInstanceId, proof, ipfsCid } = parse.data;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
   
   // Mock proof anchoring for demo

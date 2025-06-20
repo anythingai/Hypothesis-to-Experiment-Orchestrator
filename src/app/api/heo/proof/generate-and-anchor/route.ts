@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   }
   const { protocolInstanceId, rawData } = parse.data;
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
-  ipfsService.initialize(context);
+  ipfsService.initialize(context.config as Record<string, unknown>);
   zkSnarkService.initialize(context);
   try {
     const params = { protocolInstanceId, rawData: rawData as ExperimentalData };

@@ -2,7 +2,6 @@ import { z } from 'zod';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { fairService, type FairPackageInput } from '@/services/fairService';
-import { ipfsService } from '@/services/ipfsService';
 import type { ElizaOSContext } from '@/elizaos/types';
 import { redundantStorageService } from '@/services/redundantStorageService';
 

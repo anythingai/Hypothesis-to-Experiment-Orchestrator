@@ -12,10 +12,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Missing cid query parameter' }, { status: 400 });
   }
   const context: ElizaOSContext = { config: { ...process.env }, logger: console };
-  ipfsService.initialize(context);
+  ipfsService.initialize(context.config as Record<string, unknown>);
   try {
     const buffer = await ipfsService.retrieve(cid);
-    const dataString = buffer.toString('utf-8');
+    const dataString = (buffer as Buffer).toString('utf-8');
     return NextResponse.json({ success: true, data: dataString });
   } catch (error) {
     return NextResponse.json(

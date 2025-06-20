@@ -44,6 +44,7 @@ const validateExperimentResults = async (
   );
 
   // We used to need this for IPFS operations, but now the ipfsService doesn't need context
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _unusedEffectiveContext: ElizaOSContext = _context ?? { config: { ...process.env }, logger: console };
   
   const {
@@ -90,6 +91,7 @@ const validateExperimentResults = async (
     validationStatus.timestamp = new Date().toISOString();
     
     // Use the zkSnarkService to generate a proof
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _unusedProofResult = await runGroth16Prover(
       protocol_instance_id,
       raw_data

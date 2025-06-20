@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 // Mock token economics for demonstration
 interface TokenBalance {
