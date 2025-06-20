@@ -286,9 +286,3 @@ npm run dev
 MIT License - Open source for the scientific community
 
 ---
-
-**🎯 Targeting GitLab Challenge First Place ($12,500)**  
-**📅 Submission Deadline: June 17, 2025 @ 2:00pm PDT**  
-**🏆 Ready to transform scientific research with GitLab CI/CD!**
-
----
