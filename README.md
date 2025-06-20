@@ -1,6 +1,6 @@
 # 🔬 HEO - The Hypothesis to Experiment Orchestrator
 
-**Building Science. Faster. For Everyone. **
+**Building Science. Faster. For Everyone.**
 
 > Transform scientific research workflows into automated GitLab CI/CD pipelines using Google Cloud AI. Copy 3 files, automate science in 5 minutes.
 
