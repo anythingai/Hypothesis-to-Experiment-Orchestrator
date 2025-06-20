@@ -2,7 +2,7 @@
 
 **Building Science. Faster. For Everyone.**
 
-> Transform scientific research workflows into automated GitLab CI/CD pipelines using Google Cloud AI. Copy 3 files, automate science in 5 minutes.
+> Transform scientific research workflows into automated GitLab CI/CD pipelines using Google Cloud AI.
 
 [![Deploy to Cloud Run](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run?git_repo=https://github.com/YOUR_USERNAME/heo-ai-in-action)
 
