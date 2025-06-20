@@ -1,5 +1,3 @@
-import { logger } from '../utils/logger';
-import fs from 'fs';
 import type { ElizaOSContext } from '../elizaos/types'; // Import ElizaOSContext
 import { ApplicationError, ErrorCode } from '../utils/errorHandling';
 

@@ -6,23 +6,23 @@
  */
 
 interface Logger {
-  info: (message: string, meta?: any) => void;
-  error: (message: string, meta?: any) => void;
-  warn: (message: string, meta?: any) => void;
-  debug: (message: string, meta?: any) => void;
+  info: (message: string, meta?: unknown) => void;
+  error: (message: string, meta?: unknown) => void;
+  warn: (message: string, meta?: unknown) => void;
+  debug: (message: string, meta?: unknown) => void;
 }
 
 const createBrowserLogger = (): Logger => ({
-  info: (message: string, meta?: any) => {
+  info: (message: string, meta?: unknown) => {
     console.log(`[INFO] ${message}`, meta || '');
   },
-  error: (message: string, meta?: any) => {
+  error: (message: string, meta?: unknown) => {
     console.error(`[ERROR] ${message}`, meta || '');
   },
-  warn: (message: string, meta?: any) => {
+  warn: (message: string, meta?: unknown) => {
     console.warn(`[WARN] ${message}`, meta || '');
   },
-  debug: (message: string, meta?: any) => {
+  debug: (message: string, meta?: unknown) => {
     console.debug(`[DEBUG] ${message}`, meta || '');
   }
 });

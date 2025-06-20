@@ -10,7 +10,7 @@ import { logger } from '@/utils/logger';
 interface DKGAsset {
   UAL: string;
   state: 'CREATED' | 'STORED' | 'PUBLISHED' | 'FAILED';
-  data: any;
+  data: Record<string, unknown>;
   blockchain?: string;
   publicAssertionId?: string;
 }
@@ -22,6 +22,22 @@ interface DKGQueryResult {
     page: number;
     pageSize: number;
   };
+}
+
+interface DKGPublishOptions {
+  blockchain?: string;
+  epochs?: number;
+  maxNumberOfRetries?: number;
+  frequency?: number;
+  tokenAmount?: string;
+}
+
+interface DKGQueryOptions {
+  graphLocation?: string;
+  graphState?: string;
+  issuer?: string;
+  limit?: number;
+  offset?: number;
 }
 
 class DKGService {
@@ -72,13 +88,7 @@ class DKGService {
   /**
    * Publishes data to the DKG network
    */
-  async publish(data: any, options: {
-    blockchain?: string;
-    epochs?: number;
-    maxNumberOfRetries?: number;
-    frequency?: number;
-    tokenAmount?: string;
-  } = {}): Promise<{ UAL: string; publicAssertionId: string }> {
+  async publish(data: Record<string, unknown>, options: DKGPublishOptions = {}): Promise<{ UAL: string; publicAssertionId: string }> {
     try {
       logger.info('Publishing to DKG (mock):', { data, options });
 
@@ -109,7 +119,7 @@ class DKGService {
   /**
    * Retrieves data from the DKG network by UAL
    */
-  async retrieve(UAL: string): Promise<any> {
+  async retrieve(UAL: string): Promise<Record<string, unknown>> {
     try {
       logger.info('Retrieving from DKG (mock):', { UAL });
 
@@ -129,13 +139,7 @@ class DKGService {
   /**
    * Queries the DKG network for assets matching criteria
    */
-  async query(queryObject: any, options: {
-    graphLocation?: string;
-    graphState?: string;
-    issuer?: string;
-    limit?: number;
-    offset?: number;
-  } = {}): Promise<DKGQueryResult> {
+  async query(queryObject: Record<string, unknown>, options: DKGQueryOptions = {}): Promise<DKGQueryResult> {
     try {
       logger.info('Querying DKG (mock):', { queryObject, options });
 
@@ -151,10 +155,13 @@ class DKGService {
         );
       }
 
-      if (queryObject.name) {
-        filteredAssets = filteredAssets.filter(asset => 
-          asset.data.name?.toLowerCase().includes(queryObject.name.toLowerCase())
-        );
+      if (queryObject.name && typeof queryObject.name === 'string') {
+        filteredAssets = filteredAssets.filter(asset => {
+          const assetName = asset.data.name;
+          const queryName = queryObject.name as string;
+          return typeof assetName === 'string' && 
+                 assetName.toLowerCase().includes(queryName.toLowerCase());
+        });
       }
 
       // Apply pagination
@@ -204,14 +211,14 @@ class DKGService {
   }
 
   /**
-   * Health check for DKG service
+   * Health check for the DKG service
    */
   async healthCheck(): Promise<{ status: string; network?: string }> {
     try {
-      // Mock health check - always returns healthy for demo
+      // Mock health check - always returns healthy
       return {
         status: 'healthy',
-        network: 'mainnet'
+        network: 'OriginTrail DKG (mock)'
       };
     } catch (error) {
       logger.error('DKG health check failed:', error);
@@ -222,6 +229,5 @@ class DKGService {
   }
 }
 
-// Export singleton instance
 export const dkgService = new DKGService();
 export default dkgService;

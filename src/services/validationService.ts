@@ -44,7 +44,7 @@ const validateExperimentResults = async (
   );
 
   // We used to need this for IPFS operations, but now the ipfsService doesn't need context
-  const _effectiveContext: ElizaOSContext = _context ?? { config: { ...process.env }, logger: console };
+  const _unusedEffectiveContext: ElizaOSContext = _context ?? { config: { ...process.env }, logger: console };
   
   const {
     protocol_instance_id,
@@ -90,7 +90,7 @@ const validateExperimentResults = async (
     validationStatus.timestamp = new Date().toISOString();
     
     // Use the zkSnarkService to generate a proof
-    const proofResult = await runGroth16Prover(
+    const _unusedProofResult = await runGroth16Prover(
       protocol_instance_id,
       raw_data
     );

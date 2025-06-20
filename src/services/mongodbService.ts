@@ -196,6 +196,7 @@ export class MongoDBService {
     .toArray();
 
     return results.map((doc) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { _id, ...docWithoutId } = doc;
       return docWithoutId as ScientificDataset;
     });

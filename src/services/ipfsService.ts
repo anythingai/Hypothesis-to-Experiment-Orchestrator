@@ -11,9 +11,21 @@ interface IPFSFile {
   hash: string;
   path: string;
   size: number;
-  data: any;
+  data: unknown;
   mimeType?: string;
   uploadDate: Date;
+}
+
+interface IPFSUploadOptions {
+  pin?: boolean;
+  filename?: string;
+  mimeType?: string;
+}
+
+interface IPFSStoreOptions {
+  pin?: boolean;
+  filename?: string;
+  mimeType?: string;
 }
 
 class IPFSService {
@@ -66,11 +78,7 @@ class IPFSService {
   /**
    * Upload data to IPFS and return hash
    */
-  async upload(data: any, options: {
-    pin?: boolean;
-    filename?: string;
-    mimeType?: string;
-  } = {}): Promise<{ hash: string; size: number }> {
+  async upload(data: unknown, options: IPFSUploadOptions = {}): Promise<{ hash: string; size: number }> {
     try {
       logger.info('Uploading to IPFS (mock):', { 
         dataType: typeof data, 
@@ -105,7 +113,7 @@ class IPFSService {
   /**
    * Retrieve data from IPFS by hash
    */
-  async retrieve(hash: string): Promise<any> {
+  async retrieve(hash: string): Promise<unknown> {
     try {
       logger.info('Retrieving from IPFS (mock):', { hash });
 
@@ -199,7 +207,7 @@ class IPFSService {
   }
 
   /**
-   * List all stored files (for demo purposes)
+   * List all stored files
    */
   async listFiles(): Promise<Array<{
     hash: string;
@@ -209,20 +217,17 @@ class IPFSService {
     uploadDate: Date;
   }>> {
     try {
-      const files = Array.from(this.mockStorage.values()).map(file => ({
+      const files = Array.from(this.mockStorage.values());
+      return files.map(file => ({
         hash: file.hash,
         path: file.path,
         size: file.size,
         mimeType: file.mimeType,
         uploadDate: file.uploadDate
       }));
-
-      logger.info('Listed IPFS files (mock):', { count: files.length });
-
-      return files;
     } catch (error) {
       logger.error('Failed to list IPFS files:', error);
-      throw new Error(`IPFS list failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`IPFS list files failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -231,10 +236,10 @@ class IPFSService {
    */
   async healthCheck(): Promise<{ status: string; nodeId?: string }> {
     try {
-      // Mock health check - always returns healthy for demo
+      // Mock health check - always returns healthy
       return {
         status: 'healthy',
-        nodeId: '12D3KooWMockNodeId123456789abcdef'
+        nodeId: 'mock-ipfs-node-12345'
       };
     } catch (error) {
       logger.error('IPFS health check failed:', error);
@@ -245,47 +250,35 @@ class IPFSService {
   }
 
   /**
-   * Initialize the IPFS service with context
+   * Initialize IPFS service (for compatibility)
    */
-  initialize(context?: any): void {
-    const effectiveLogger = context?.logger || logger;
-    effectiveLogger.info('Initializing IPFS service (mock)');
-    // Mock initialization - no actual setup needed for demo
+  initialize(context?: Record<string, unknown>): void {
+    logger.info('IPFS Service initialized (mock)', { context: !!context });
   }
 
   /**
-   * Shutdown the IPFS service
+   * Shutdown IPFS service (for compatibility)
    */
-  async shutdown(context?: any): Promise<void> {
-    const effectiveLogger = context?.logger || logger;
-    effectiveLogger.info('Shutting down IPFS service (mock)');
-    // Mock shutdown - no actual cleanup needed for demo
+  async shutdown(context?: Record<string, unknown>): Promise<void> {
+    logger.info('IPFS Service shutdown (mock)', { context: !!context });
   }
 
   /**
-   * Get gateway URL for a given IPFS hash
+   * Get gateway URL for a hash (for compatibility)
    */
-  getGatewayUrl(hash: string, context?: any): string {
-    const effectiveLogger = context?.logger || logger;
-    effectiveLogger.debug('Getting IPFS gateway URL (mock):', { hash });
-    
-    // Return a mock gateway URL for demo purposes
+  getGatewayUrl(hash: string, context?: Record<string, unknown>): string {
+    logger.info('Getting IPFS gateway URL (mock)', { hash, context: !!context });
     return `https://ipfs.io/ipfs/${hash}`;
   }
 
   /**
-   * Store data and return hash (alias for upload method)
+   * Store data (alias for upload method for compatibility)
    */
-  async store(data: any, options?: {
-    pin?: boolean;
-    filename?: string;
-    mimeType?: string;
-  }): Promise<string> {
+  async store(data: unknown, options?: IPFSStoreOptions): Promise<string> {
     const result = await this.upload(data, options);
     return result.hash;
   }
 }
 
-// Export singleton instance
 export const ipfsService = new IPFSService();
 export default ipfsService; 
