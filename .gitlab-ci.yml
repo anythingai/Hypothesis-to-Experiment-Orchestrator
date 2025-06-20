@@ -7,10 +7,20 @@ stages:
   - experiment
   - proof
   - publish
+  - build
+  - test
+  - deploy
 
 variables:
   HEO_API_BASE: "https://heo.anything.ai/api"
   NODE_VERSION: "18"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PYTHON_VERSION: "3.11"
+
+cache:
+  paths:
+    - .cache/pip
+    - venv/
 
 # Validate protocol before running
 validate_protocol:
@@ -128,23 +138,6 @@ generate_report:
   only:
     - main
 
-# GitLab CI/CD Pipeline for HEO Documentation
-# Deploys MkDocs documentation to GitLab Pages
-
-stages:
-  - build
-  - test
-  - deploy
-
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PYTHON_VERSION: "3.11"
-
-cache:
-  paths:
-    - .cache/pip
-    - venv/
-
 # Build documentation with MkDocs
 build_docs:
   stage: build
@@ -243,8 +236,8 @@ security_scan:
     - safety check --json || true
     - bandit -r . -f json -o bandit-report.json || true
   artifacts:
-    reports:
-      security: bandit-report.json
+    paths:
+      - bandit-report.json
     expire_in: 1 week
   allow_failure: true
   only:
@@ -267,8 +260,8 @@ performance_test:
     - lighthouse http://localhost:8000 --output=json --output-path=lighthouse-report.json --chrome-flags="--headless --no-sandbox"
     - cat lighthouse-report.json | jq '.categories.performance.score * 100'
   artifacts:
-    reports:
-      performance: site/lighthouse-report.json
+    paths:
+      - site/lighthouse-report.json
     expire_in: 1 week
   allow_failure: true
   only:
