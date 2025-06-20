@@ -292,5 +292,3 @@ MIT License - Open source for the scientific community
 **🏆 Ready to transform scientific research with GitLab CI/CD!**
 
 ---
-
-*"Copy 3 files → Automate scientific research with GitLab CI/CD + Google Cloud"*
