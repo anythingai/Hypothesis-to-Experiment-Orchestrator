@@ -1,13 +1,10 @@
 # HEO - Scientific CI/CD Platform
 
-<div align="center">
-  <h2>🔬 Building Science. Faster.</h2>
-  <p><strong>Transform scientific research workflows into automated GitLab CI/CD pipelines using Google Cloud AI</strong></p>
-  
-  <a href="https://deploy.cloud.run?git_repo=https://github.com/YOUR_USERNAME/heo-ai-in-action">
-    <img src="https://deploy.cloud.run/button.svg" alt="Deploy to Cloud Run">
-  </a>
-</div>
+## 🔬 Building Science. Faster.
+
+**Transform scientific research workflows into automated GitLab CI/CD pipelines using Google Cloud AI**
+
+[Deploy to Cloud Run](https://deploy.cloud.run?git_repo=https://github.com/YOUR_USERNAME/heo-ai-in-action)
 
 ---
 
@@ -17,7 +14,7 @@
 
 HEO solves the **$28B reproducibility crisis** by bringing GitLab's "Building Software. Faster." philosophy to scientific research.
 
-### The Problem
+## The Problem
 
 - Scientific research wastes **$28 billion annually** on irreproducible experiments
 - **70% of research fails to reproduce** due to manual workflows  
@@ -53,6 +50,7 @@ Choose your preferred method to get started:
 === "GitLab CI/CD Template"
 
     1. **Copy template to your GitLab repo:**
+    
     ```bash
     cp templates/.gitlab-ci.yml your-research-repo/
     cp templates/research-config.yml your-research-repo/
@@ -64,6 +62,7 @@ Choose your preferred method to get started:
     - `RESEARCH_QUERY`: Your research question
 
     3. **Push and watch automation:**
+    
     ```bash
     git add .
     git commit -m "Automate science with HEO"
@@ -195,6 +194,10 @@ curl -X POST /api/validation \
 - **Only project** solving real $28B industry problem  
 - **Only project** with immediate adoption path for 50K+ labs
 - **Only project** ready for GitLab CI/CD Catalog submission
+
+## Competition Comparison
+
+This competitive landscape analysis demonstrates HEO's unique market position and winning strategy.
 
 ---
 

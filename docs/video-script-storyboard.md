@@ -107,7 +107,7 @@
 
 ### **GIF 1: Problem Statement (5 seconds)**
 
-```
+```text
 Frame 1: [0.0s] Clean background with "$28B" text
 Frame 2: [1.0s] Add "WASTED ANNUALLY" with red highlighting
 Frame 3: [2.0s] Show "70% FAILURE RATE" with declining chart
@@ -126,7 +126,7 @@ Frame 5: [4.0s] Fade to HEO logo with "Solution:" text
 
 ### **GIF 2: Copy 3 Files Process (8 seconds)**
 
-```
+```text
 Frame 1: [0.0s] Empty GitLab repository
 Frame 2: [1.5s] Cursor selects .gitlab-ci.yml template
 Frame 3: [3.0s] Copy action with visual feedback
@@ -147,7 +147,7 @@ Frame 7: [8.0s] "3 FILES COPIED" success message
 
 ### **GIF 3: Pipeline Execution (12 seconds)**
 
-```
+```text
 Frame 1: [0.0s] Git push command in terminal
 Frame 2: [1.0s] GitLab pipeline starts (pending state)
 Frame 3: [2.0s] Hypothesis generation stage (running)
@@ -171,7 +171,7 @@ Frame 10: [12.0s] All stages complete with success badges
 
 ### **GIF 4: Results Dashboard (6 seconds)**
 
-```
+```text
 Frame 1: [0.0s] Pipeline artifacts page
 Frame 2: [1.5s] Download hypotheses.json
 Frame 3: [3.0s] Show JSON content preview
@@ -191,7 +191,7 @@ Frame 6: [6.0s] "REPRODUCIBLE SCIENCE ACHIEVED" banner
 
 ### **GIF 5: Performance Metrics (4 seconds)**
 
-```
+```text
 Frame 1: [0.0s] "Traditional Research" with slow progress bar
 Frame 2: [1.0s] "2 hypotheses/week" counter
 Frame 3: [2.0s] Transition to "HEO Platform"
@@ -289,4 +289,6 @@ Frame 5: [4.0s] "3,550% IMPROVEMENT" explosion effect
 
 ---
 
-**🎬 Ready to film the winning demo video for the GitLab Challenge! 🏆**
+## 🎬 Ready to Film the Winning Demo Video
+
+**Ready to film the winning demo video for the GitLab Challenge! 🏆**
