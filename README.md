@@ -281,15 +281,6 @@ npm run dev
 
 ---
 
-## 📞 **Contact & Support**
-
-- **Hackathon Demo:** [YouTube Video](https://youtube.com/watch?v=YOUR_VIDEO)
-- **Live Instance:** [heo-ai-in-action.run.app](https://heo-ai-in-action-xxx.a.run.app)
-- **Documentation:** [GitLab Pages](https://your-username.gitlab.io/heo-ai-in-action)
-- **Issues:** [GitHub Issues](https://github.com/YOUR_USERNAME/heo-ai-in-action/issues)
-
----
-
 ## 📄 **License**
 
 MIT License - Open source for the scientific community
