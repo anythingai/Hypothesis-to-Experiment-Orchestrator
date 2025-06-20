@@ -1,4 +1,4 @@
-# 🔬 HEO - The Hypothesis to Experiment Orchestrator
+# 🔬 HEO 3.0 - The Hypothesis to Experiment Orchestrator
 
 **Building Science. Faster. For Everyone.**
 
