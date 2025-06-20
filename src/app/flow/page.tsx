@@ -22,6 +22,7 @@ export default function FlowPage() {
 
   // Step 0: Hypothesis
   const [query, setQuery] = useState<string>('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_hypotheses, setHypotheses] = useState<Hypothesis[]>([]);
   const [selectedHypothesis, setSelectedHypothesis] = useState<Hypothesis | null>(null);
 
