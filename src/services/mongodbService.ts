@@ -1,6 +1,5 @@
 import type { Db, Collection } from 'mongodb';
 import { MongoClient } from 'mongodb';
-import type { DatasetDocument, InsightDocument } from '@/types/mongodb';
 import { logger } from '@/utils/logger';
 
 export interface ScientificDataset {
@@ -33,7 +32,7 @@ export interface ExperimentResult {
   protocolId: string;
   hypothesisId: string;
   timestamp: Date;
-  results: Record<string, any>;
+  results: Record<string, unknown>;
   success: boolean;
   reproducibilityScore: number;
   embedding?: number[];
@@ -196,7 +195,10 @@ export class MongoDBService {
     .limit(limit)
     .toArray();
 
-    return results.map((doc: any) => ({ ...doc, _id: undefined } as ScientificDataset));
+    return results.map((doc) => {
+      const { _id, ...docWithoutId } = doc;
+      return docWithoutId as ScientificDataset;
+    });
   }
 
   // AI-powered insight generation
@@ -224,10 +226,10 @@ export class MongoDBService {
     if (!this.datasets) return [];
 
     const dataset = await this.datasets.findOne({ id: datasetId });
-    if (!dataset || !(dataset as any).embedding) return [];
+    if (!dataset || !dataset.embedding) return [];
 
     const related = await this.searchDatasetsByVector(
-      (dataset as any).title + ' ' + (dataset as any).description,
+      dataset.title + ' ' + dataset.description,
       5
     );
 
@@ -300,11 +302,26 @@ export class MongoDBService {
     const [stats] = await this.experiments.aggregate(pipeline).toArray();
     const topProtocols = await this.experiments.aggregate(protocolPipeline).toArray();
 
+    interface StatsResult {
+      totalExperiments?: number;
+      averageReproducibility?: number;
+      successRate?: number;
+    }
+
+    interface ProtocolResult {
+      protocolId: string;
+      count: number;
+      avgScore: number;
+    }
+
+    const statsResult = stats as StatsResult;
+    const protocolResults = topProtocols as ProtocolResult[];
+
     return {
-      totalExperiments: (stats as any)?.totalExperiments || 0,
-      averageReproducibility: (stats as any)?.averageReproducibility || 0,
-      successRate: (stats as any)?.successRate || 0,
-      topProtocols: topProtocols as unknown as Array<{ protocolId: string; count: number; avgScore: number }>
+      totalExperiments: statsResult?.totalExperiments || 0,
+      averageReproducibility: statsResult?.averageReproducibility || 0,
+      successRate: statsResult?.successRate || 0,
+      topProtocols: protocolResults
     };
   }
 
@@ -387,12 +404,12 @@ export class MongoDBService {
         publishedDate: new Date("2021-07-22"),
         authors: ["DeepMind Team", "John Jumper", "Demis Hassabis"],
         doi: "10.1038/s41586-021-03819-2",
-        tags: ["protein", "structure", "prediction", "AI", "AlphaFold", "drug-discovery"],
+        tags: ["protein-structure", "AI-prediction", "alphafold", "structural-biology"],
         metadata: {
           proteins: 200000000,
-          organisms: 1000000,
-          accuracy: "95%",
-          resolution: "atomic-level"
+          species: 1000000,
+          accuracy: "90%+ confidence",
+          resolution: "atomic"
         }
       }
     ];
@@ -402,17 +419,27 @@ export class MongoDBService {
         await this.storeDataset(dataset);
         logger.info('Public dataset loaded', { title: dataset.title });
       } catch (error) {
-        logger.warn('Failed to load dataset', { title: dataset.title, error });
+        logger.warn('Failed to load public dataset', { 
+          title: dataset.title, 
+          error 
+        });
       }
     }
 
-    logger.info('Public datasets loading completed', { count: publicDatasets.length });
+    logger.info('Public datasets loading completed', { 
+      attempted: publicDatasets.length 
+    });
   }
 
   async disconnect(): Promise<void> {
     if (this.client) {
       await this.client.close();
-      logger.info('MongoDB connection closed');
+      this.client = null;
+      this.db = null;
+      this.datasets = null;
+      this.insights = null;
+      this.experiments = null;
+      logger.info('MongoDB service disconnected');
     }
   }
 }
