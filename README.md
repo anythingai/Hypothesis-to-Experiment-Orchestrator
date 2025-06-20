@@ -1,4 +1,4 @@
-# 🔬 HEO - Scientific CI/CD Platform
+# 🔬 HEO - The Hypothesis to Experiment Orchestrator
 
 **Building Science. Faster.**
 
